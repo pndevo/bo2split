@@ -1,0 +1,19 @@
+# Build output
+build/
+
+# Logs
+*.log
+
+# Game files, in case you work inside the game folder
+*.ff
+*.xpak
+*.bik
+t6zm.exe
+t6zm.exe.*
+t6mp.exe
+
+# Editor and OS
+.bo2split-export
+.vs/
+*.user
+Thumbs.db

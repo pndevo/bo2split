@@ -1,0 +1,46 @@
+name: build
+
+on:
+  push:
+    branches: ['**']
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        shell: cmd
+        run: build.bat
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: bo2split
+          path: |
+            build/XINPUT1_3.dll
+            bo2ss.ini
+
+      - name: Package release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $dir = "bo2split-$tag"
+          New-Item -ItemType Directory -Path $dir | Out-Null
+          foreach ($f in 'build/XINPUT1_3.dll', 'bo2ss.ini', 'panel.ps1', 'panel.bat', 'README.md', 'LICENSE') {
+            Copy-Item $f $dir
+          }
+          Compress-Archive -Path "$dir/*" -DestinationPath "$dir.zip"
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create '${{ github.ref_name }}' "bo2split-${{ github.ref_name }}.zip" --title '${{ github.ref_name }}' --generate-notes

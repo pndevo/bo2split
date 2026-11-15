@@ -1,0 +1,18 @@
+# Formatting of the sources: clang-format --style=file -i <files>
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 120
+PointerAlignment: Left
+AccessModifierOffset: -4
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortLambdasOnASingleLine: Inline
+ReflowComments: false
+SortIncludes: Never
+AlignTrailingComments: true
+BinPackArguments: true
+BinPackParameters: true
+IndentCaseLabels: false
