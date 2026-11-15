@@ -9,6 +9,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 - Controls moved from the README to `docs/controls.md`; the README is shorter and starts with install and the start of a match.
 - Bug report form for issues.
 - Branches: `develop` for the work, `main` for releases.
+- Commit messages follow Conventional Commits (`CONTRIBUTING.md`).
 - A merge into `main` makes the release by itself when this file names a new version. The release zip also holds the documents and pictures, and the release text lists SHA256 checksums.
 
 ## v0.1.0
