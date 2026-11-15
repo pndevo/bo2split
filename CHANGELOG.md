@@ -7,6 +7,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 ## Unreleased
 
 - Fixed: player 1's muzzle flash sat in the middle of the screen, across the border between the views, and showed in the other views as well. It sits at player 1's muzzle now, in player 1's view only.
+- Fixed: player 1's shell casings flew next to the weapon of every other player. In split-screen the casings of the first-person weapon are no longer drawn.
 - Players 2 to 4 see the muzzle flash of their first-person weapon. Before, they saw the flash other players see, a little beside the weapon.
 - Fixed: the round counter of players 2 to 4 stayed one round behind.
 - README: the list of known limits no longer names the burning effect; it shows for every player.

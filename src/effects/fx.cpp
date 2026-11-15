@@ -252,7 +252,35 @@ bool WeaponFxInPass(int pass) {
     return recent(0) || !(recent(1) || recent(2) || recent(3));
 }
 
+// The shell casings. 0x00533b20 plays a weapon's shell eject effect: for the view's own player
+// the first-person variant, bound to the first-person weapon's DObj (handle 0x700 + lc), for
+// everybody else the variant of the world model, bound to the player's entity. It takes the
+// first branch when the entity is the snapshot's player and cg+0x480a0 is not 1. Like the
+// muzzle flash the first-person variant is drawn in every view pass, in the weapon space of
+// that pass: player 1's casings flew next to the weapon of every other player. Unlike the
+// flash the casings are models and live for seconds, so the rule by time does not fit them.
+//
+// p_brass_world=1: while more than one view is drawn, the function runs with cg+0x480a0 = 1,
+// so player 1's casings are the ones of the world model, at player 1's place in every view.
+typedef void(__cdecl* EjectBrass_t)(int, int*, unsigned, unsigned, int, int);
+static EjectBrass_t oEjectBrass;
+static void __cdecl HookEjectBrass(int lc, int* entNum, unsigned weapon, unsigned tag, int leftHand, int flag) {
+    uint8_t* cg = *(uint8_t**)engine::kCg;
+    if (!cg || g_viewCount < 2 || !ReadIniInt(L"p_brass_world", 1)) {
+        oEjectBrass(lc, entNum, weapon, tag, leftHand, flag);
+        return;
+    }
+    int* outside = (int*)(cg + 0x480a0);
+    int saved = *outside;
+    *outside = 1;
+    oEjectBrass(lc, entNum, weapon, tag, leftHand, flag);
+    *outside = saved;
+}
+static const uint8_t kProEjectBrass[] = {0x57, 0x8b, 0x7c, 0x24, 0x0c};
+
 const Detour kFxHooks[] = {
+    {"shell eject effect of a weapon (the world model's variant while the split runs)", engine::kCG_EjectWeaponBrass,
+     kProEjectBrass, sizeof(kProEjectBrass), (void*)HookEjectBrass, (void**)&oEjectBrass},
     {"view flash of a weapon (remembers the pass that started it)", engine::kCG_PlayWeaponFlash, kProPlayWeaponFlash,
      sizeof(kProPlayWeaponFlash), (void*)HookPlayWeaponFlash, (void**)&oPlayWeaponFlash},
     {"FX_CullSphere (culled only when both players' cameras cull)", 0x005cd6d0, kProFxCullSphere,

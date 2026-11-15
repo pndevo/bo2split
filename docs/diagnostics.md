@@ -155,6 +155,7 @@ Each of these turns one part of the mod on or off. All are on (or at their worki
 | `p_fx_weapon_own` | `1` | Those effects are drawn in a view only shortly after its own player's shot; with `0` a muzzle flash shows at the muzzle of every player. |
 | `p_fx_weapon_ms` | `200` | How long after a player's shot its view draws the effects of the first-person weapon, in ms. |
 | `p_view_flash` | `1` | A shot of players 2 to 4 plays the muzzle flash of the first-person weapon in their own view. |
+| `p_brass_world` | `1` | While more than one view is drawn, player 1's shell casings are the ones of the world model; with `0` the casings of the first-person weapon fly next to every player's weapon. |
 | `p_hud_round` | `1` | The round counter of players 2 to 4 follows the round; with `0` it stays one round behind. |
 | `p_hud_dpad_show` | `1` | The ammo counter and the d-pad block of players 2 to 4 fade in again when their ammo or weapon changes. |
 | `p2_hud_score` | `1` | Score lines in the half of player 2 follow both players' points. |
