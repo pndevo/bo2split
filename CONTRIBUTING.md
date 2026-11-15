@@ -32,9 +32,18 @@ The game is a closed executable. These rules keep the code checkable and the rep
 
 ## Branches and pull requests
 
-- `main` holds the released state. Nothing is pushed to it directly; it changes only by a merge from `develop`. A merge makes a release when `CHANGELOG.md` names a version that has no tag yet (its first `## v1.2.3` heading); the workflow creates the tag.
-- `develop` is where the work goes. Branch from it, and open pull requests against it.
-- The workflow builds every push and every pull request. A pull request is merged when its build passes.
+```
+fix/round-counter ──┐
+feat/pause-menu ────┼──> develop ──> main ──> release
+docs/controls ──────┘
+```
+
+- **Work happens on a branch of its own**, made from `develop` and named after the kind of change: `feat/...`, `fix/...`, `perf/...`, `refactor/...`, `docs/...`, `build/...`, `ci/...` or `chore/...`, with a short name in lower case after the slash (`fix/round-counter`).
+- **`develop` only changes by a pull request** from such a branch. Nothing is pushed to it directly.
+- **`main` only changes by a pull request from `develop`.** It holds the released state. A merge makes a release when `CHANGELOG.md` names a version that has no tag yet (its first `## v1.2.3` heading); the workflow creates the tag.
+- After a release `main` may be merged back into `develop`, so that the two stay level.
+- The workflow checks all of this on every pull request (the job `branch-policy`) and builds every push and every pull request (the job `build`). A pull request is merged when both pass.
+- The title of a pull request has the form of a commit message (see below); a pull request from `develop` to `main` may also be titled `release: v1.2.3`.
 - Add a line to the "Unreleased" section of [CHANGELOG.md](CHANGELOG.md) for a change a player would notice.
 
 ## Commit messages
@@ -63,7 +72,7 @@ docs(readme): shorter, controls moved to docs/controls.md
 - **Body** (optional, after an empty line): why, and the engine addresses involved. Say how the change was checked, and what was not checked.
 - **A change that breaks a setting or a default**: `feat(ini)!: ...` and a line `BREAKING CHANGE: ...` in the body.
 - One change per commit. A fix and an unrelated cleanup are two commits.
-- The title of a pull request follows the same form; it becomes the commit on `main`.
+- The title of a pull request follows the same form.
 
 ## Report a bug
 
