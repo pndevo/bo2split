@@ -120,7 +120,6 @@ Every setting is described in [docs/configuration.md](docs/configuration.md).
 - The controller options of players 2 to 4 show one row that does nothing for them: "Enable gamepad" (skipped). With two views side by side the options are drawn at half size.
 - Players 2 to 4 cannot open the pause menu (resume, restart, end game); that stays with player 1.
 - The keyboard and mouse layout of players 2 to 4 is fixed, and the hint texts in their halves show player 1's key names.
-- Burning and some other effects the server tells players 2 to 4 about are not shown on their screens.
 - Players 3 and 4 start to aim down sights a little later than player 2 does, because the aim is not predicted locally for them.
 - Stance changes of players 2 to 4 start a little later than player 1's.
 - The muzzle flash can sit beside the weapon in some views.

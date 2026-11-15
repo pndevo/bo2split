@@ -6,7 +6,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
-Nothing yet.
+- README: the list of known limits no longer names the burning effect; it shows for every player.
 
 ## v0.1.1
 
