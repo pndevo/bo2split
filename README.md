@@ -10,7 +10,7 @@
 ![Renderer](https://img.shields.io/badge/renderer-Direct3D%2011-informational)
 ![Licence](https://img.shields.io/badge/licence-MIT-green)
 
-[Install](#install) · [Start a match](#start-a-match) · [Controls](#controls) · [Settings](#settings) · [Known limits](#known-limits) · [How it works](#how-it-works)
+[Install](#install) · [Start a match](#start-a-match) · [Controls](#controls) · [Settings](#settings) · [Known limits](#known-limits) · [How it works](#how-it-works) · [Changes](CHANGELOG.md)
 
 ![Four players on one screen](img/four-players.jpg)
 
@@ -49,6 +49,26 @@ The PC version of Black Ops II never shipped the split-screen the consoles had. 
 
 The split direction is `split_vertical`, the layout with three players `layout_three_players` (one wide view above two quarters, as shown, or three quarters).
 
+## Install
+
+1. Put Steam into offline mode (Steam menu, "Go Offline").
+2. Copy `XINPUT1_3.dll` and `bo2ss.ini` into the game folder, next to `t6zm.exe`. In the Steam library: right click the game, Manage, Browse local files.
+3. Optional: copy `panel.ps1` and `panel.bat` there too, for the settings window.
+
+To remove the mod, delete `XINPUT1_3.dll` from the game folder.
+
+The mod writes `bo2ss.log` into the same folder. It is the file to attach to a bug report.
+
+## Start a match
+
+1. Start Black Ops II Zombies from Steam while Steam is in offline mode.
+2. The local lobby opens by itself after a moment. Do not click "Online".
+3. Choose the map in the lobby (Map, then game mode and location).
+4. Other players join in the lobby: press A on a gamepad that no player uses yet, B leaves again. Player 1 is always in, on the first connected gamepad or on keyboard and mouse when there is none. If nobody joins, player 1 plays alone on the whole screen.
+5. Start the match by hand with "Start Match".
+
+The map choice shows only the base game's map. A DLC map that you own and have installed is named in `bo2ss.ini` instead, see [docs/configuration.md](docs/configuration.md#start).
+
 ## Supported game build
 
 | | |
@@ -70,90 +90,30 @@ The mod hooks the engine at fixed addresses, so it is tied to this one build. An
 
 Requirements beyond those of the game itself have not been measured.
 
-## Install
-
-1. Put Steam into offline mode (Steam menu, "Go Offline").
-2. Copy `XINPUT1_3.dll` and `bo2ss.ini` into the game folder, next to `t6zm.exe`. In the Steam library: right click the game, Manage, Browse local files.
-3. Optional: copy `panel.ps1` and `panel.bat` there too, for the settings window.
-
-To remove the mod, delete `XINPUT1_3.dll` from the game folder.
-
-The mod writes `bo2ss.log` into the same folder. It is the file to attach to a bug report.
-
-## Start a match
-
-1. Start Black Ops II Zombies from Steam while Steam is in offline mode.
-2. The local lobby opens by itself after a moment. Do not click "Online".
-3. Choose the map in the lobby (Map, then game mode and location).
-4. Other players join in the lobby: press A on a gamepad that no player uses yet. The lobby lists each player and shows a line saying which player joins next. B on a joined pad leaves again. Player 1 is always in: it has the first connected gamepad, or the keyboard and mouse when no gamepad is connected, and its device cannot join or leave. While player 1 plays on a gamepad, keyboard and mouse still work in the menus. If nobody joins, player 1 plays alone on the whole screen.
-5. Start the match by hand with "Start Match".
-
-The map choice shows only the base game's map. A map from a DLC that you own and have installed can still be played: name it in `bo2ss.ini` with the settings `map`, `startlocation` and `gametype` (`zm_transit`, `transit`, `zclassic` for TranZit; `zm_tomb`, `tomb`, `zclassic` for Origins; the combinations that have been played are listed in [docs/configuration.md](docs/configuration.md#start)), and start the match from the lobby.
-
 ## Controls
 
-Player 1 plays through the game's own bindings, on keyboard and mouse or on a gamepad. Players 2 to 4 use the layouts below. Their pad layout is shared by the three players and can be changed with the `btn_*` settings (see Settings).
+Player 1 plays through the game's own bindings. Players 2 to 4 use the layout of the console version on a gamepad:
 
-### Gamepad, players 2 to 4
-
-| Input | Action |
+| | |
 |---|---|
-| Left stick | Move |
-| Right stick | Look |
-| Right trigger | Fire |
-| Left trigger | Aim down sights |
-| Right bumper | Lethal grenade |
-| Left bumper | Tactical grenade |
-| X | Use / reload |
-| A | Jump (stands up first when crouched or prone) |
-| B | Crouch (tap), prone (hold) |
-| Left stick click | Sprint |
-| Right stick click | Melee |
-| Y | Next weapon |
-| D-pad up, down, left, right | Action slots 1 to 4 |
-| Start | The player's own controller options |
+| Sticks | Move and look; click left to sprint, click right for melee |
+| Triggers | Right fires, left aims down sights |
+| Bumpers | Right throws the lethal grenade, left the tactical one |
+| A / B / X / Y | Jump / crouch (hold: prone) / use and reload / next weapon |
+| D-pad | Action slots 1 to 4 |
+| Start | The player's own controller options, in the player's own view |
 | Back | Scoreboard in the player's own view, while held |
 
-Sprinting and then holding the crouch button dives to prone. A press of the sprint button while crouched or prone stands the player up.
-
-Start opens the game's controller options for that player, inside the player's own view: look inversion, stick layout, button layout and look sensitivity. D-pad or left stick moves, A selects, B goes back, Start closes. The match goes on meanwhile and the other players see nothing of it. The choices are kept per player in `bo2ss_players.ini` in the game folder. A button layout chosen there (tactical, lefty, N0M4D, charlie) changes which button does what on top of the table above. Player 1 uses the game's own pause and options menu.
-
-### Keyboard and mouse, players 2 to 4
-
-This layout is fixed. Only one player at a time can have the keyboard and mouse; while a player 2 to 4 has them, they no longer reach player 1.
-
-| Input | Action |
-|---|---|
-| W A S D | Move |
-| Mouse | Look |
-| Left mouse button | Fire |
-| Right mouse button | Aim down sights |
-| G | Lethal grenade |
-| Q | Tactical grenade |
-| F or R | Use / reload |
-| Space | Jump |
-| C or left Ctrl | Crouch (tap), prone (hold) |
-| Left Shift | Sprint |
-| V or E | Melee |
-| 1 or middle mouse button | Next weapon |
-| 2 | Previous weapon |
-| 3, 4, 5, 6 | Action slots 1 to 4 |
-| Escape | Pause menu of player 1 |
+The full tables, the keyboard and mouse layout and the controller options are in [docs/controls.md](docs/controls.md). The buttons can be reassigned with the `btn_*` settings.
 
 ## Settings
 
-The settings live in `bo2ss.ini` in the game folder. Each setting has a comment, and a setting that is left out has its default. The mod reads most of them every frame, so a change shows while the game runs. The ones you are most likely to look for: `lobby_join`, `auto_start_after_ms`, `map`, `startlocation` and `gametype` (start), `p1_pad` to `p4_pad` and `extra_players` (devices), `split_vertical`, `layout_three_players` and `fov_scale` (screen), `look_native`, `look_speed`, `look_deadzone`, `look_curve`, `look_ads_scale` and `mouse_sens` (look and aim), the `btn_*` keys and `stance_hold_ms` (buttons) and `trace` (log).
+Everything works without touching a setting. To change one:
 
-The settings window `panel.bat` edits the same file. Double click it from the game folder. It finds the game folder itself. `panel.bat` starts a PowerShell script with the execution policy set for that one call only, because Windows would otherwise refuse to run an unsigned script; the script is plain text next to it and you can read it first. The window has tabs for:
+- **`panel.bat`** in the game folder opens a settings window: the device of each player (chosen from a list or by pressing a button on it), button layout, look and aim, screen layout, map and start. It edits `bo2ss.ini`, and most changes apply while the game runs.
+- **`bo2ss.ini`** in the game folder is the file itself. Each setting has a comment, and a setting that is left out has its default.
 
-- the input device of each player, chosen from a list or by pressing a button on the device, with the live state of each pad;
-- the button layout of the gamepad and the stance hold time;
-- look and aim: stick speed, dead zone, response curve, turn rate while aiming, mouse speed;
-- the screen: split direction, layout with three players, field of view;
-- the start: map, start location, game type, automatic start or lobby by hand, joining in the lobby;
-- the end of the log.
-
-Every setting is described in [docs/configuration.md](docs/configuration.md). For a bug report, attach `bo2ss.log` and your `bo2ss.ini`; [docs/diagnostics.md](docs/diagnostics.md) says how to read the log and lists the switches that are not in the file.
+Every setting is described in [docs/configuration.md](docs/configuration.md).
 
 ## Known limits
 
@@ -168,7 +128,8 @@ Every setting is described in [docs/configuration.md](docs/configuration.md). Fo
 - Switching the layout (three players, split direction) during a match leaves the HUD at the old place. Choose the layout before the match starts.
 - The hint line in the lobby is placed for a 16:9 screen; other aspect ratios are not tested.
 - The names of the joined players in the lobby are the host's name and a number.
-- Not yet tested: player 1 on a gamepad in the lobby, unplugging a gamepad in the lobby, joining right after a game over without going back to the main menu.
+
+Found something else? Open an issue with the bug report form; it asks for `bo2ss.log` and `bo2ss.ini`. [docs/diagnostics.md](docs/diagnostics.md) says how to read the log.
 
 ## Build from source
 
@@ -177,6 +138,10 @@ Run `build.bat` from a normal command prompt. It looks for the Visual Studio Bui
 ## How it works
 
 The DLL stands in for the game's XInput library, so the game loads it at start and calls it every frame. From that call it runs a second, third and fourth client of the game inside the same process. They connect to the game's own local server through a loopback connection, so the server sees four players. The screen is drawn with the engine's own view loop, once per player, into a part of the screen each. Each pass runs on a copy of the engine's per-player state, so every player has their own camera, weapon, HUD and sound. The design is described in [docs/how-it-works.md](docs/how-it-works.md).
+
+## Changes
+
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## Disclaimer and licence
 

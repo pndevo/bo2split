@@ -1,0 +1,84 @@
+name: Bug report
+description: Something does not work as the README says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. The log is what makes a bug findable: `bo2ss.log` is written into the game folder, next to `t6zm.exe`, and is replaced at every start of the game. Copy it right after the problem showed.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead. A screenshot helps.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps
+      description: What the players did before it happened, as far as you remember.
+      placeholder: |
+        1. Started Town with three players
+        2. Player 2 bought a perk
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: players
+    attributes:
+      label: Number of players
+      options: ['1', '2', '3', '4']
+    validations:
+      required: true
+  - type: input
+    id: map
+    attributes:
+      label: Map and mode
+      placeholder: TranZit, Survival on Town, Origins, ...
+    validations:
+      required: true
+  - type: textarea
+    id: devices
+    attributes:
+      label: Input devices
+      description: Which player uses what, and how each pad is connected (cable, Bluetooth, a tool such as DS4Windows or Steam Input).
+      placeholder: |
+        Player 1: keyboard and mouse
+        Player 2: Xbox pad, cable
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version of the mod
+      description: The tag of the release you downloaded, or the commit you built.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: screen
+    attributes:
+      label: Resolution and window mode
+      placeholder: 1920 x 1080, fullscreen
+  - type: textarea
+    id: log
+    attributes:
+      label: bo2ss.log
+      description: Drag the file into this field, or paste its contents.
+    validations:
+      required: true
+  - type: textarea
+    id: ini
+    attributes:
+      label: bo2ss.ini
+      description: Only when you changed a setting. Drag the file here or paste the lines you changed.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checked
+      options:
+        - label: Steam was in offline mode
+          required: true
+        - label: The problem is not in the list of known limits in the README
+          required: true

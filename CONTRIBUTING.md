@@ -30,9 +30,44 @@ The game is a closed executable. These rules keep the code checkable and the rep
 - **No game content.** No executables, fastfiles, script dumps, textures or models, in any form, ever.
 - **No cheats and no online features.** The mod is for local co-op in Steam offline mode.
 
+## Branches and pull requests
+
+- `main` holds the released state. Nothing is pushed to it directly; it changes only by a merge from `develop`. A merge makes a release when `CHANGELOG.md` names a version that has no tag yet (its first `## v1.2.3` heading); the workflow creates the tag.
+- `develop` is where the work goes. Branch from it, and open pull requests against it.
+- The workflow builds every push and every pull request. A pull request is merged when its build passes.
+- Add a line to the "Unreleased" section of [CHANGELOG.md](CHANGELOG.md) for a change a player would notice.
+
+## Commit messages
+
+Commits follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): summary`.
+
+```
+fix(hud): round counter of players 2 to 4 follows the round
+feat(input): run-up of the turn rate can be switched off
+docs(readme): shorter, controls moved to docs/controls.md
+```
+
+| Type | For |
+|---|---|
+| `feat` | something a player can do or set that was not there before |
+| `fix` | a bug that is gone |
+| `perf` | the same behaviour, faster |
+| `refactor` | code moved or renamed, the compiled behaviour unchanged |
+| `docs` | README, the documents under `docs/`, comments |
+| `build` | `build.bat`, compiler options |
+| `ci` | the workflow and the issue forms |
+| `chore` | everything else that touches no behaviour (formatting, file moves) |
+
+- **Scope** is the folder under `src/` the change is mostly in: `core`, `engine`, `menu`, `input`, `shadow`, `view`, `hud`, `effects`. Other scopes: `panel`, `ini`, `readme`, `changelog`. Leave the scope out when a change has no single place.
+- **Summary**: what is different afterwards, in the present tense, lower case, no full stop, at most about 72 characters. Say the effect ("counter follows the round"), not the work ("change swap logic").
+- **Body** (optional, after an empty line): why, and the engine addresses involved. Say how the change was checked, and what was not checked.
+- **A change that breaks a setting or a default**: `feat(ini)!: ...` and a line `BREAKING CHANGE: ...` in the body.
+- One change per commit. A fix and an unrelated cleanup are two commits.
+- The title of a pull request follows the same form; it becomes the commit on `main`.
+
 ## Report a bug
 
-Open an issue and attach:
+Open an issue with the bug report form. It asks for:
 
 1. `bo2ss.log` from the game folder, from the run in which the problem happened. Start the game fresh, reproduce the problem, close the game, then take the file.
 2. Your `bo2ss.ini`.
