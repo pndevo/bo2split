@@ -11,6 +11,47 @@ on:
   pull_request:
 
 jobs:
+  # The branch rules of CONTRIBUTING.md, checked on every pull request: work reaches develop
+  # from a branch named after the kind of change, main only takes develop, and the title of
+  # the pull request has the form of a commit message.
+  branch-policy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the branches and the title
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          types='feat|fix|perf|refactor|docs|build|ci|chore'
+          fail=0
+          case "$BASE" in
+            main)
+              if [ "$HEAD" != "develop" ]; then
+                echo "::error::main only takes pull requests from develop (this one comes from '$HEAD')."
+                fail=1
+              fi
+              if ! printf '%s' "$TITLE" | grep -Eq '^release: v[0-9]+\.[0-9]+\.[0-9]+$|^('"$types"')(\([a-z0-9-]+\))?!?: .+'; then
+                echo "::error::Title '$TITLE': use 'release: v1.2.3' or the form of a commit message, 'type(scope): summary'."
+                fail=1
+              fi
+              ;;
+            develop)
+              # main may come back into develop after a release, so that the two stay level
+              if [ "$HEAD" = "main" ]; then exit 0; fi
+              if ! printf '%s' "$HEAD" | grep -Eq '^('"$types"')/[a-z0-9][a-z0-9._-]*$'; then
+                echo "::error::Branch '$HEAD': name it after the kind of change, for example fix/round-counter or feat/pause-menu ($types)."
+                fail=1
+              fi
+              if ! printf '%s' "$TITLE" | grep -Eq '^('"$types"')(\([a-z0-9-]+\))?!?: .+'; then
+                echo "::error::Title '$TITLE': use the form of a commit message, 'type(scope): summary'."
+                fail=1
+              fi
+              ;;
+          esac
+          exit $fail
+
   build:
     runs-on: windows-latest
     permissions:
