@@ -32,7 +32,7 @@ The game is a closed executable. These rules keep the code checkable and the rep
 
 ## Branches and pull requests
 
-- `main` holds the released state. Nothing is pushed to it directly; it changes only by a merge from `develop`, and a release is a tag (`v*`) on `main`.
+- `main` holds the released state. Nothing is pushed to it directly; it changes only by a merge from `develop`. A merge makes a release when `CHANGELOG.md` names a version that has no tag yet (its first `## v1.2.3` heading); the workflow creates the tag.
 - `develop` is where the work goes. Branch from it, and open pull requests against it.
 - The workflow builds every push and every pull request. A pull request is merged when its build passes.
 - Add a line to the "Unreleased" section of [CHANGELOG.md](CHANGELOG.md) for a change a player would notice.

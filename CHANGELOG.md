@@ -1,12 +1,15 @@
 # Changelog
 
-All notable changes to bo2split are listed here, newest first. Versions are the tags of the repository; each tag has a release with the built DLL.
+All notable changes to bo2split are listed here, newest first. Each version has a release with the built DLL.
+
+To release: rename the section "Unreleased" to the new version (`## v1.2.3`), add an empty "Unreleased" above it, and merge `develop` into `main`. The workflow then tags the merge and makes the release with this section as its text.
 
 ## Unreleased
 
 - Controls moved from the README to `docs/controls.md`; the README is shorter and starts with install and the start of a match.
 - Bug report form for issues.
 - Branches: `develop` for the work, `main` for releases.
+- A merge into `main` makes the release by itself when this file names a new version. The release zip also holds the documents and pictures, and the release text lists SHA256 checksums.
 
 ## v0.1.0
 
