@@ -6,7 +6,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
-Nothing yet.
+- Branch rules: work goes to `develop` by a pull request from a branch named after the kind of change, `main` only takes `develop`; the workflow checks it.
 
 ## v0.1.2
 
