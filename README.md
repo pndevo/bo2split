@@ -122,7 +122,8 @@ Every setting is described in [docs/configuration.md](docs/configuration.md).
 - The keyboard and mouse layout of players 2 to 4 is fixed, and the hint texts in their halves show player 1's key names.
 - Players 3 and 4 start to aim down sights a little later than player 2 does, because the aim is not predicted locally for them.
 - Stance changes of players 2 to 4 start a little later than player 1's.
-- The muzzle flash can sit beside the weapon in some views.
+- Players 2 to 4 see their own muzzle flash as the other players see it, a little beside the weapon, not the flash of the first-person weapon.
+- The shell casings of player 1's weapon also fly next to the weapons of the other players.
 - Whether a gamepad vibrates is up to the pad and its connection: the mod sends the motor values to every pad, and some pads ignore them over Bluetooth.
 - Switching the layout (three players, split direction) during a match leaves the HUD at the old place. Choose the layout before the match starts.
 - The hint line in the lobby is placed for a 16:9 screen; other aspect ratios are not tested.

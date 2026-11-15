@@ -151,6 +151,8 @@ Each of these turns one part of the mod on or off. All are on (or at their worki
 | `p2_hud_draw_p0` | `1` | What the first view draws with the own HUD: 1 the engine's HUD, 0 nothing, 2 the second player's root. |
 | `p_hud_extra` | `1` | Players 3 and 4 get a HUD root of their own. 0 shows no HUD in their quarters. |
 | `p_hud_bits` | `1` | The HUD visibility bits reach every player's HUD root. |
+| `p_fx_weapon_rect` | `1` | The effects of a first-person weapon (muzzle flash) are drawn into the rect of their view; with `0` they sit where the muzzle would be on an undivided screen. |
+| `p_fx_weapon_own` | `1` | Those effects are drawn in player 1's view only; with `0` player 1's muzzle flash also shows at the muzzle of the other players. |
 | `p_hud_round` | `1` | The round counter of players 2 to 4 follows the round; with `0` it stays one round behind. |
 | `p_hud_dpad_show` | `1` | The ammo counter and the d-pad block of players 2 to 4 fade in again when their ammo or weapon changes. |
 | `p2_hud_score` | `1` | Score lines in the half of player 2 follow both players' points. |

@@ -175,18 +175,34 @@ static void __stdcall HookRSSetViewports(void* ctx, unsigned n, const float* vps
             vps[2], vps[3], vps[4], vps[5], (unsigned)(uintptr_t)_ReturnAddress());
     }
     // Only the depth-range re-sends are rewritten (identified by their return address:
-    // 0x0046b7b0 and the inline copies in 0x00473d30, 0x004743f0, 0x00474870). They carry the
-    // state rect, which the render-target switch resets to full screen; everything drawn
-    // after such a switch (viewmodel, transparents, decals) would cover both views.
+    // 0x0046b7b0 and the inline copies in 0x00472370, 0x00473d30, 0x004743f0, 0x00474870). They
+    // carry the state rect, which the render-target switch resets to full screen; everything
+    // drawn after such a switch (viewmodel, transparents, decals) would cover both views. The
+    // copy in 0x00472370 (returns to 0x0047258d) runs only in frames that draw an effect of
+    // the first-person weapon: with the full-screen rect the muzzle flash sat where the muzzle
+    // would be on an undivided screen.
     uintptr_t ret = (uintptr_t)_ReturnAddress();
     BeLog("rsvp", ret, vps, nullptr);
     // 0x0046b7b0 ends at 0x0046b852; its RSSetViewports call returns to 0x0046b84f (a bound
     // of 0x0046b830 would miss it and leave full-screen viewports in the second pass: a
     // flickering right half with player 1's scene elements and the weapon at the window centre).
-    bool depthRangeSite = (ret >= 0x0046b7b0 && ret < 0x0046b860) || (ret >= 0x00473d30 && ret < 0x00475000);
+    bool weaponFxSite = ret >= 0x00472370 && ret < 0x004727d6 && ReadIniInt(L"p_fx_weapon_rect", 1);
+    bool depthRangeSite =
+        (ret >= 0x0046b7b0 && ret < 0x0046b860) || (ret >= 0x00473d30 && ret < 0x00475000) || weaponFxSite;
     if (g_viewOverride && g_vpHook && n == 1 && vps && depthRangeSite) {
         int sw = *(int*)engine::kScreenWidth, sh = *(int*)engine::kScreenHeight;
         if (vps[0] == 0.0f && vps[1] == 0.0f && (int)vps[2] == sw && (int)vps[3] == sh) {
+            // p_fx_weapon_own=1: the effects of a first-person weapon are drawn in every view
+            // pass, in the pass's own weapon space, so player 1's muzzle flash showed at the
+            // muzzle of every other player as well. Only player 1's weapon plays such effects
+            // (a shadow player's shot plays the flash of a player seen from outside), so the
+            // passes of the shadow players draw them into an empty viewport. The next
+            // depth-range re-send restores the view's rect.
+            if (weaponFxSite && g_bePass >= 1 && ReadIniInt(L"p_fx_weapon_own", 1)) {
+                float none[6] = {(float)g_beRect[0], (float)g_beRect[1], 0.0f, 0.0f, vps[4], vps[5]};
+                oRSSetViewports(ctx, 1, none);
+                return;
+            }
             if (g_beRectValid && ReadIniInt(L"p2_be_rect", 1)) {
                 float vp[6] = {
                     (float)g_beRect[0], (float)g_beRect[1], (float)g_beRect[2], (float)g_beRect[3], vps[4], vps[5]};

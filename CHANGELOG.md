@@ -6,6 +6,8 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+- Fixed: player 1's muzzle flash sat in the middle of the screen, across the border between the views, and showed in the other views as well. It sits at player 1's muzzle now, in player 1's view only.
+- Fixed: the round counter of players 2 to 4 stayed one round behind.
 - README: the list of known limits no longer names the burning effect; it shows for every player.
 
 ## v0.1.1
