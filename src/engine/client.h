@@ -54,6 +54,10 @@ constexpr uintptr_t kAimInputGraphs =
 constexpr size_t kAimInputGraphSize = 0x148;
 constexpr int kAimInputGraphCount = 4;
 constexpr uintptr_t kAimScaleViewAxisDvar = 0x00f86400; // dvar* aim_scale_view_axis (bool)
+constexpr uintptr_t kCG_PlayWeaponFlash =
+    0x005304a0; // void (lc, dobj handle, weapon, bool view weapon, tag name): plays the weapon's flash effect on that tag
+constexpr uintptr_t kTagFlashName = 0x02405500; // uint16: the script string "tag_flash"
+constexpr int kViewWeaponDObjHandle = 0x700;    // plus the local client: the first-person weapon's DObj
 constexpr uintptr_t kCG_PlayRumbleOnClient =
     0x004ef8a0; // void (lc, const char* name): starts a rumble on the player of the snapshot
 constexpr uintptr_t kGraphFloat_GetValue =

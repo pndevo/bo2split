@@ -193,12 +193,11 @@ static void __stdcall HookRSSetViewports(void* ctx, unsigned n, const float* vps
         int sw = *(int*)engine::kScreenWidth, sh = *(int*)engine::kScreenHeight;
         if (vps[0] == 0.0f && vps[1] == 0.0f && (int)vps[2] == sw && (int)vps[3] == sh) {
             // p_fx_weapon_own=1: the effects of a first-person weapon are drawn in every view
-            // pass, in the pass's own weapon space, so player 1's muzzle flash showed at the
-            // muzzle of every other player as well. Only player 1's weapon plays such effects
-            // (a shadow player's shot plays the flash of a player seen from outside), so the
-            // passes of the shadow players draw them into an empty viewport. The next
-            // depth-range re-send restores the view's rect.
-            if (weaponFxSite && g_bePass >= 1 && ReadIniInt(L"p_fx_weapon_own", 1)) {
+            // pass, in the pass's own weapon space, so a muzzle flash showed at the muzzle of
+            // every player. A pass whose player started no view flash lately draws them into
+            // an empty viewport (WeaponFxInPass, fx.cpp). The next depth-range re-send restores
+            // the view's rect.
+            if (weaponFxSite && !WeaponFxInPass(g_bePass) && ReadIniInt(L"p_fx_weapon_own", 1)) {
                 float none[6] = {(float)g_beRect[0], (float)g_beRect[1], 0.0f, 0.0f, vps[4], vps[5]};
                 oRSSetViewports(ctx, 1, none);
                 return;
