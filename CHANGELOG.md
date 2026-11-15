@@ -6,6 +6,12 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+Nothing yet.
+
+## v0.1.1
+
+No change to the mod itself; the DLL is built from the same sources as v0.1.0.
+
 - Controls moved from the README to `docs/controls.md`; the README is shorter and starts with install and the start of a match.
 - Bug report form for issues.
 - Branches: `develop` for the work, `main` for releases.
