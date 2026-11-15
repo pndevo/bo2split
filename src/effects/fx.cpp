@@ -33,6 +33,7 @@
 #include "shadow/shadow.h"
 #include "engine/client.h"
 #include "engine/render.h"
+#include "engine/offsets.h"
 
 static const int kFxCameraSize = 0xa0;
 // Two buffers per pass: the capture writes the idle one and then flips the index, so a worker
@@ -201,7 +202,87 @@ void ShadowFxLog(int pass) {
         kept, box, cell);
 }
 
+// The muzzle flash of the first-person weapon. The game plays it when it adds the view weapon
+// (0x005390c0): the fire event sets bits on the player's entity (+0x378), and for the view
+// weapon 0x005304a0(lc, 0x700 + lc, weapon, 1, tag_flash) starts the weapon's view flash
+// effect, bound to the tag of the first-person weapon's DObj. The fire events of the shadow
+// players run in player 1's cgame, where they are other characters: no view flash, only the
+// flash of the world model, which sits beside the first-person weapon in the player's own view.
+//
+// p_view_flash=1: a shadow player's shot (counted by the fire sound hook) starts the view
+// flash in its own pass, the way the game does for player 1.
+//
+// An effect bound to the first-person weapon is drawn in every view pass, in the weapon space
+// of that pass (all passes are local client 0 on one effect system), so a flash would show at
+// every player's muzzle. The render thread can not tell the effects apart; it knows the pass.
+// So each pass remembers when its player last started a view flash, and the effects of the
+// first-person weapon are drawn in a pass only for p_fx_weapon_ms after that (WeaponFxInPass,
+// used by the viewport hook in render_backend.cpp). Player 1's pass draws them at all other
+// times as well, except while only a shadow player's flash is running: effects that scripts
+// put on player 1's weapon stay, and a shadow player's flash does not show on player 1's gun.
+typedef void(__cdecl* PlayWeaponFlash_t)(int, int, int, int, unsigned);
+static PlayWeaponFlash_t oPlayWeaponFlash;
+static volatile DWORD g_viewFlashTick[4]; // per pass: tick of the last view flash, 0 = never
+static void __cdecl HookPlayWeaponFlash(int lc, int handle, int weapon, int viewWeapon, unsigned tag) {
+    if (viewWeapon) {
+        int pass = (g_inRenderViews && g_viewPass >= 0 && g_viewPass <= 3) ? g_viewPass : 0;
+        DWORD now = GetTickCount();
+        g_viewFlashTick[pass] = now ? now : 1;
+    }
+    oPlayWeaponFlash(lc, handle, weapon, viewWeapon, tag);
+}
+static const uint8_t kProPlayWeaponFlash[] = {0x8b, 0x44, 0x24, 0x0c, 0x83, 0xec, 0x24};
+
+void ShadowViewFlash(const uint8_t* cg) {
+    if (!cg || !oPlayWeaponFlash || !ReadIniInt(L"p_view_flash", 1)) return;
+    int weapon = engine::BG_GetWeapon(cg + engine::kCgPredictedPs);
+    if (!weapon) return;
+    HookPlayWeaponFlash(0, engine::kViewWeaponDObjHandle, weapon, 1, *(const uint16_t*)engine::kTagFlashName);
+}
+
+bool WeaponFxInPass(int pass) {
+    if (pass < 0 || pass > 3) return true;
+    DWORD now = GetTickCount();
+    DWORD window = (DWORD)ReadIniInt(L"p_fx_weapon_ms", 200);
+    auto recent = [&](int p) {
+        DWORD t = g_viewFlashTick[p];
+        return t && now - t < window;
+    };
+    if (pass >= 1) return recent(pass);
+    return recent(0) || !(recent(1) || recent(2) || recent(3));
+}
+
+// The shell casings. 0x00533b20 plays a weapon's shell eject effect: for the view's own player
+// the first-person variant, bound to the first-person weapon's DObj (handle 0x700 + lc), for
+// everybody else the variant of the world model, bound to the player's entity. It takes the
+// first branch when the entity is the snapshot's player and cg+0x480a0 is not 1. Like the
+// muzzle flash the first-person variant is drawn in every view pass, in the weapon space of
+// that pass: player 1's casings flew next to the weapon of every other player. Unlike the
+// flash the casings are models and live for seconds, so the rule by time does not fit them.
+//
+// p_brass_world=1: while more than one view is drawn, the function runs with cg+0x480a0 = 1,
+// so player 1's casings are the ones of the world model, at player 1's place in every view.
+typedef void(__cdecl* EjectBrass_t)(int, int*, unsigned, unsigned, int, int);
+static EjectBrass_t oEjectBrass;
+static void __cdecl HookEjectBrass(int lc, int* entNum, unsigned weapon, unsigned tag, int leftHand, int flag) {
+    uint8_t* cg = *(uint8_t**)engine::kCg;
+    if (!cg || g_viewCount < 2 || !ReadIniInt(L"p_brass_world", 1)) {
+        oEjectBrass(lc, entNum, weapon, tag, leftHand, flag);
+        return;
+    }
+    int* outside = (int*)(cg + 0x480a0);
+    int saved = *outside;
+    *outside = 1;
+    oEjectBrass(lc, entNum, weapon, tag, leftHand, flag);
+    *outside = saved;
+}
+static const uint8_t kProEjectBrass[] = {0x57, 0x8b, 0x7c, 0x24, 0x0c};
+
 const Detour kFxHooks[] = {
+    {"shell eject effect of a weapon (the world model's variant while the split runs)", engine::kCG_EjectWeaponBrass,
+     kProEjectBrass, sizeof(kProEjectBrass), (void*)HookEjectBrass, (void**)&oEjectBrass},
+    {"view flash of a weapon (remembers the pass that started it)", engine::kCG_PlayWeaponFlash, kProPlayWeaponFlash,
+     sizeof(kProPlayWeaponFlash), (void*)HookPlayWeaponFlash, (void**)&oPlayWeaponFlash},
     {"FX_CullSphere (culled only when both players' cameras cull)", 0x005cd6d0, kProFxCullSphere,
      sizeof(kProFxCullSphere), (void*)HookFxCullSphere, (void**)&oFxCullSphere},
     {"FX spawn culling of an element (same, with the spawn range)", 0x005c3bf0, kProFxCullElemForSpawn,

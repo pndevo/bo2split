@@ -861,7 +861,10 @@ static void LuiDumpRoots() {
 // thread block's context, which is set as in ShadowHudClientFields.
 static void ShadowRecoil(int slot, uint8_t* cg) {
     LONG shots = InterlockedExchange(&g_shadowShots[slot], 0);
-    if (shots > 0) ShadowRumbleShot(cg);
+    if (shots > 0) {
+        ShadowRumbleShot(cg);
+        ShadowViewFlash(cg);
+    }
     if (shots <= 0 || !ReadIniInt(L"p2_recoil", 1)) return;
     uint8_t* tls = *(uint8_t**)(__readfsdword(0x2c) + *(const int*)engine::kTlsIndex * 4);
     if (!tls) return;
