@@ -30,9 +30,16 @@ The game is a closed executable. These rules keep the code checkable and the rep
 - **No game content.** No executables, fastfiles, script dumps, textures or models, in any form, ever.
 - **No cheats and no online features.** The mod is for local co-op in Steam offline mode.
 
+## Branches and pull requests
+
+- `main` holds the released state. Nothing is pushed to it directly; it changes only by a merge from `develop`, and a release is a tag (`v*`) on `main`.
+- `develop` is where the work goes. Branch from it, and open pull requests against it.
+- The workflow builds every push and every pull request. A pull request is merged when its build passes.
+- Add a line to the "Unreleased" section of [CHANGELOG.md](CHANGELOG.md) for a change a player would notice.
+
 ## Report a bug
 
-Open an issue and attach:
+Open an issue with the bug report form. It asks for:
 
 1. `bo2ss.log` from the game folder, from the run in which the problem happened. Start the game fresh, reproduce the problem, close the game, then take the file.
 2. Your `bo2ss.ini`.
