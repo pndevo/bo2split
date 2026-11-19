@@ -25,6 +25,8 @@ constexpr uintptr_t kCG_WeapNext_f = 0x0053be10;              // CG_WeapNext_f
 constexpr uintptr_t kCG_WeapPrev_f = 0x0053be50;              // CG_WeapPrev_f
 constexpr uintptr_t kCL_SendCmd =
     0x00541180; // void (int lc): the command packet send step, reads the ready-to-send check first
+constexpr uintptr_t kClResyncAfterPause =
+    0x00546df0; // void (): sets cl+0x2ac0 of every local client; the first frame after a pause then takes the server time anew
 constexpr uintptr_t kCL_CheckForResend = 0x00550c90; // void (int lc): getchallenge / connect
 constexpr uintptr_t kCL_ToggleMenu = 0x00556870;     // void (int lc): opens or closes menu 3 in state 10
 constexpr uintptr_t kCom_GetClientDObj = 0x006cab90; // void* (handle, lc): the DObj of an entity through the handle map

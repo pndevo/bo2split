@@ -310,6 +310,7 @@ void PauseUpdate() {
     if (want) {
         if (engine::DvarIntValue(paused) == 0) {
             engine::DvarSetInt(paused, 1);
+            ((void(__cdecl*)())engine::kClResyncAfterPause)(); // as UI_SetActiveMenu does after setting the dvar
             Log("[menu] match paused for a player's menu");
         }
         g_pauseHeld = true;
