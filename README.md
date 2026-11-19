@@ -32,7 +32,7 @@ The PC version of Black Ops II never shipped the split-screen the consoles had. 
 | **Any mix of devices** | Up to four XInput gamepads, or keyboard and mouse for one player and gamepads for the others. |
 | **Join in the lobby** | The game's own local lobby opens by itself. Choose the map there; players join with A and leave with B. |
 | **The whole move set** | Players 2 to 4 shoot, aim, reload, sprint, crouch, go prone, dive to prone, switch weapons, throw grenades, use the action slots, buy perks, and build with parts. |
-| **Options per player** | Start on a gamepad opens the game's controller options in that player's own view: look sensitivity, inversion, stick layout, button layout, vibration. Kept per player; the match goes on meanwhile. |
+| **Options per player** | Start on any gamepad pauses the match; every player 2 to 4 then has the game's controller options in its own view: look sensitivity, inversion, stick layout, button layout, vibration. Kept per player. |
 | **Gamepad feel of the game** | The right stick of every player uses the game's own response curve and turn rates, and the turn rate no longer depends on the number of views. The run-up of the turn can be switched off (`look_accel`). |
 | **Vibration per player** | Each gamepad vibrates for its own player's shots, hits and explosions. |
 | **Settings window** | `panel.bat` edits every setting, shows the live state of each pad and assigns a device by pressing a button on it. Most settings apply while the game runs. |
@@ -118,7 +118,8 @@ Every setting is described in [docs/configuration.md](docs/configuration.md).
 ## Known limits
 
 - The controller options of players 2 to 4 show one row that does nothing for them: "Enable gamepad" (skipped). With two views side by side the options are drawn at half size.
-- Players 2 to 4 cannot open the pause menu (resume, restart, end game); that stays with player 1.
+- Players 2 to 4 pause the match with Start, but the entries of the pause menu (resume, restart, end game) are player 1's.
+- The menu of a player 2 to 4 has a darker background than player 1's.
 - The keyboard and mouse layout of players 2 to 4 is fixed, and the hint texts in their halves show player 1's key names.
 - Players 3 and 4 start to aim down sights a little later than player 2 does, because the aim is not predicted locally for them.
 - Stance changes of players 2 to 4 start a little later than player 1's.

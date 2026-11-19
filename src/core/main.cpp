@@ -308,10 +308,9 @@ void OnFrame() {
         }
     }
     DevFrame(g_build->clientUIActive0);
-    ShadowControlsFrame(); // pause menu toggle from player 2's pad
-    PInputFrame();         // logs the device per player when it changes
-    ShadowRumbleFrame();   // vibration of the shadow players' pads
-    LobbyFrame();          // lobby_join=1: pads join and leave in the lobby
+    PInputFrame();       // logs the device per player when it changes
+    ShadowRumbleFrame(); // vibration of the shadow players' pads
+    LobbyFrame();        // lobby_join=1: pads join and leave in the lobby
     // perf_log=1: every 5 s the frame rate, the ini lookups per frame and how many of them
     // went to the file.
     {
