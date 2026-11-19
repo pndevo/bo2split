@@ -324,10 +324,11 @@ void Open(int slot) {
     Log("[menu] player %d menu opened", slot + 2);
 }
 
-// The match stays paused as long as a menu of a shadow player is open: the pause is the dvar
-// cl_paused (UI_SetActiveMenu sets it for player 1's pause menu, menu 3, and clears it for menu
-// 0). Player 1's pause menu closing clears the dvar while the other menus still take a moment
-// to close, so it is set again until the last one is gone.
+// The pause is the dvar cl_paused: UI_SetActiveMenu sets it for player 1's pause menu (menu 3)
+// and clears it for menu 0, and the menu's own code clears it when it ends or restarts the
+// match, with menu 3 still the active one. The menus of the shadow players follow the dvar: when
+// it is cleared they close (g_pauseEnded), and nothing here sets it, so the match never stays
+// paused behind a menu that is on its way out.
 //
 // The client's server time is its clock plus a delta, computed per frame while the match is not
 // paused (0x00546e30), and the clock moves on during a pause. The engine marks the client when
@@ -336,29 +337,23 @@ void Open(int slot) {
 // a short stutter. Here the mark is cleared, and the delta is taken back by the clock's advance
 // in every frame in which the pause kept the time from being computed, so the time goes on from
 // where it stood.
+bool g_pauseEnded; // the dvar went to 0 since the last frame
 void PauseUpdate() {
     void* dvar = *(void**)engine::kClPausedDvar;
     uint8_t* cl = *(uint8_t**)engine::kClPtr;
     if (!dvar || !cl) return;
     static int lastTime, lastClock;
-    static bool wasPaused, held;
+    static bool wasPaused;
     int clock = *(const int*)engine::kClClock, time = *(const int*)(cl + engine::kClServerTime);
     bool paused = engine::DvarIntValue(dvar) != 0;
     if (g_p2.started) {
         if ((paused || wasPaused) && time == lastTime) *(int*)(cl + engine::kClServerTimeDelta) -= clock - lastClock;
         if (paused) *(int*)(cl + engine::kClPauseMark) = 0;
     }
+    if (wasPaused && !paused) g_pauseEnded = true;
     lastTime = time;
     lastClock = clock;
     wasPaused = paused;
-    bool want = g_p2.started && (g_slot[0].open || g_slot[1].open || g_slot[2].open);
-    if (want) {
-        if (!paused) engine::DvarSetInt(dvar, 1);
-        held = true;
-    } else if (held) {
-        held = false;
-        if (paused && *(const int*)engine::kActiveMenu != 3) engine::DvarSetInt(dvar, 0);
-    }
 }
 
 // Pad buttons that drive the menu: XInput mask and the LUI button name.
@@ -419,8 +414,9 @@ void ShadowMenuFrame() {
     DWORD now = GetTickCount();
     static bool pauseMenuUp;
     bool up = g_p2.started && *(const int*)engine::kActiveMenu == 3;
-    bool cameUp = up && !pauseMenuUp, went = !up && pauseMenuUp;
+    bool cameUp = up && !pauseMenuUp, went = (!up && pauseMenuUp) || g_pauseEnded;
     pauseMenuUp = up;
+    g_pauseEnded = false;
     // The toggle of the binding "togglemenu", CL_ToggleMenu 0x00556870(lc): opens UI menu 3 when
     // no menu is up and closes it when it is the active one. It reads cg->time without a null
     // check and needs player 1's cgame block in place, as it is here.
