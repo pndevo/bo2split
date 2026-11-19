@@ -6,7 +6,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
-- The match is paused while a player 2 to 4 is in its controller options (Start on the gamepad), as player 1's pause menu pauses it. It goes on when the last open menu is closed. `menu_pause=0` in `bo2ss.ini` brings the old behaviour back.
+- The match is paused while a player 2 to 4 is in its controller options (Start on the gamepad), as player 1's pause menu pauses it. It goes on when the last open menu is closed.
 - Branch rules: work goes to `develop` by a pull request from a branch named after the kind of change, `main` only takes `develop`; the workflow checks it.
 
 ## v0.1.2

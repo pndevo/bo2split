@@ -14,6 +14,8 @@ namespace engine {
 constexpr int kClSnapshot = 0x50;    // the current snapshot, stored inside the client block; its first dword is
                                      // non-zero once a snapshot has arrived
 constexpr int kClPlayerState = 0x70; // the playerState of the current snapshot
+constexpr int kClServerTimeDelta =
+    0x2ab0; // int: the client's server time (cl+0x2aa4) is the client clock (kClClock) plus this, set anew per frame
 
 // --- playerState ---
 constexpr size_t kPlayerStateSize = 0x2a08;

@@ -2,6 +2,7 @@
 #include "shadow/shadow.h"
 #include "engine/client.h"
 #include "engine/common.h"
+#include "engine/offsets.h"
 #include "engine/ui.h"
 
 // The game's own controller options for players 2 to 4 (player_menu=1).
@@ -297,24 +298,40 @@ void Open(int slot) {
     Log("[menu] player %d menu opened", slot + 2);
 }
 
-// The match is paused while the menu of a shadow player is open (menu_pause=1), as player 1's
+// The match is paused while the menu of a shadow player is open, as player 1's
 // pause menu pauses it: the dvar cl_paused is 1 (UI_SetActiveMenu sets it for menu 3 and clears
 // it for menu 0). Player 1 closing its own pause menu clears the dvar, so it is set again in
 // every frame a menu is open; when the last menu closes it is cleared unless player 1's pause
 // menu is up.
+//
+// The client's server time is its clock plus a delta, computed per frame while the match is not
+// paused (0x00546e30), and the clock moves on during a pause. The engine's own pause marks the
+// client (0x00546df0), and the first frame after the pause then sets the time to that of the
+// newest snapshot: a step of up to one server frame (50 ms) in one picture, seen as a short
+// stutter. Here the delta is taken back by the clock's advance in every paused frame instead
+// so the time goes on from where it stood. The mark is used only where
+// that cannot hold: the dvar was cleared by someone else while a menu was open, so a frame may
+// have run with the clock ahead.
 bool g_pauseHeld;
+int g_pauseClock; // the client clock up to which the pause is taken out of the delta
 void PauseUpdate() {
     void* paused = *(void**)engine::kClPausedDvar;
     if (!paused) return;
-    bool want = g_p2.started && (g_slot[0].open || g_slot[1].open || g_slot[2].open) && ReadIniInt(L"menu_pause", 1);
+    uint8_t* cl = *(uint8_t**)engine::kClPtr;
+    bool want = cl && g_p2.started && (g_slot[0].open || g_slot[1].open || g_slot[2].open);
+    if (!want && !g_pauseHeld) return;
+    int clock = *(const int*)engine::kClClock;
+    bool running = engine::DvarIntValue(paused) == 0;
+    if (g_pauseHeld && !running && cl) *(int*)(cl + engine::kClServerTimeDelta) -= clock - g_pauseClock;
+    g_pauseClock = clock;
     if (want) {
-        if (engine::DvarIntValue(paused) == 0) {
+        if (running) {
             engine::DvarSetInt(paused, 1);
-            ((void(__cdecl*)())engine::kClResyncAfterPause)(); // as UI_SetActiveMenu does after setting the dvar
-            Log("[menu] match paused for a player's menu");
+            if (g_pauseHeld) ((void(__cdecl*)())engine::kClResyncAfterPause)();
+            if (!g_pauseHeld) Log("[menu] match paused for a player's menu");
         }
         g_pauseHeld = true;
-    } else if (g_pauseHeld) {
+    } else {
         g_pauseHeld = false;
         if (*(const int*)engine::kActiveMenu != 3) {
             engine::DvarSetInt(paused, 0);
