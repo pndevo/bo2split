@@ -22,6 +22,7 @@ constexpr uintptr_t kMSG_Init = 0x006cfbb0;     // void (msg*, void* buffer, int
 constexpr uintptr_t kDvar_GetBool = 0x00755e50; // char (dvar*): type at dvar+0x10 == 1 -> byte at dvar+0x18
 constexpr uintptr_t kDvarIntValue =
     0x00755e80; // int (dvar*): the int value of the dvar passed (read for gpad_debug, the dive minimum speed, the client slot count)
+constexpr uintptr_t kDvarSetInt = 0x00758b20;    // void (dvar*, int value): sets the int value of a dvar
 constexpr uintptr_t kDvarSetString = 0x00758c40; // void (dvar*, const char* value): sets the string value of a dvar
 constexpr uintptr_t kScr_AddInt = 0x007ed870;    // void (int inst, int value): adds an int to the script call
 constexpr uintptr_t kScriptArgInt =
@@ -34,7 +35,9 @@ constexpr uintptr_t kParty = 0x011c7550;              // party (members from +0x
 constexpr uintptr_t kPartyHostStartFlag = 0x011d0aad; // byte: the host "start game" flag
 constexpr uintptr_t kGumpNameDvars = 0x0123c598;      // dvar_t* gump_name0..3
 constexpr uintptr_t kSessionMode = 0x02482944;        // session mode word (bit 0x10 = zombies)
-constexpr uintptr_t kSvRunningDvar = 0x02482a48;      // dvar*, tested with kDvar_GetBool: the listen server is running
+constexpr uintptr_t kClPausedDvar =
+    0x024829f0; // dvar* cl_paused, read with kDvarIntValue: nonzero while the match is paused (the pause menu sets 1)
+constexpr uintptr_t kSvRunningDvar = 0x02482a48; // dvar*, tested with kDvar_GetBool: the listen server is running
 constexpr uintptr_t kMaxClientsDvar =
     0x02504468;                              // dvar*, read with kDvarIntValue: the number of client slots (maxClients)
 constexpr uintptr_t kQportBase = 0x0270cb38; // Netchan qport = base + lc
@@ -81,6 +84,9 @@ __forceinline char Dvar_GetBool(void* dvar) {
 }
 __forceinline int DvarIntValue(void* dvar) {
     return ((int(__cdecl*)(void*))kDvarIntValue)(dvar);
+}
+__forceinline void DvarSetInt(void* dvar, int value) {
+    ((void(__cdecl*)(void*, int))kDvarSetInt)(dvar, value);
 }
 __forceinline void DvarSetString(void* dvar, const char* value) {
     ((void(__cdecl*)(void*, const char*))kDvarSetString)(dvar, value);

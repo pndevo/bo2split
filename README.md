@@ -32,7 +32,7 @@ The PC version of Black Ops II never shipped the split-screen the consoles had. 
 | **Any mix of devices** | Up to four XInput gamepads, or keyboard and mouse for one player and gamepads for the others. |
 | **Join in the lobby** | The game's own local lobby opens by itself. Choose the map there; players join with A and leave with B. |
 | **The whole move set** | Players 2 to 4 shoot, aim, reload, sprint, crouch, go prone, dive to prone, switch weapons, throw grenades, use the action slots, buy perks, and build with parts. |
-| **Options per player** | Start on a gamepad opens the game's controller options in that player's own view: look sensitivity, inversion, stick layout, button layout, vibration. Kept per player; the match goes on meanwhile. |
+| **Options per player** | Start on a gamepad opens the game's controller options in that player's own view: look sensitivity, inversion, stick layout, button layout, vibration. Kept per player; the match is paused meanwhile. |
 | **Gamepad feel of the game** | The right stick of every player uses the game's own response curve and turn rates, and the turn rate no longer depends on the number of views. The run-up of the turn can be switched off (`look_accel`). |
 | **Vibration per player** | Each gamepad vibrates for its own player's shots, hits and explosions. |
 | **Settings window** | `panel.bat` edits every setting, shows the live state of each pad and assigns a device by pressing a button on it. Most settings apply while the game runs. |

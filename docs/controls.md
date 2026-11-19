@@ -32,7 +32,7 @@ Player 1 plays through the game's own bindings, on keyboard and mouse or on a ga
 
 Sprinting and then holding the crouch button dives to prone. A press of the sprint button while crouched or prone stands the player up.
 
-Start opens the game's controller options for that player, inside the player's own view: look inversion, stick layout, button layout and look sensitivity. D-pad or left stick moves, A selects, B goes back, Start closes. The match goes on meanwhile and the other players see nothing of it. The choices are kept per player in `bo2ss_players.ini` in the game folder. A button layout chosen there (tactical, lefty, N0M4D, charlie) changes which button does what on top of the table above. Player 1 uses the game's own pause and options menu.
+Start opens the game's controller options for that player, inside the player's own view: look inversion, stick layout, button layout and look sensitivity. D-pad or left stick moves, A selects, B goes back, Start closes. The match is paused while the menu is open, for everyone, and goes on when it is closed (`menu_pause=0` in `bo2ss.ini` lets the match go on meanwhile). The menu itself shows in that player's view only. The choices are kept per player in `bo2ss_players.ini` in the game folder. A button layout chosen there (tactical, lefty, N0M4D, charlie) changes which button does what on top of the table above. Player 1 uses the game's own pause and options menu.
 
 ## Keyboard and mouse, players 2 to 4
 

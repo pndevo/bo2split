@@ -1,12 +1,13 @@
 #include "core/common.h"
 #include "shadow/shadow.h"
 #include "engine/client.h"
+#include "engine/common.h"
 #include "engine/ui.h"
 
 // The game's own controller options for players 2 to 4 (player_menu=1).
 //
 // Start on a shadow player's pad opens a menu of the game's Lua interface in that player's own
-// LUI root (hud.cpp), so it shows inside the player's view and nobody else is interrupted. The
+// LUI root (hud.cpp), so it shows inside the player's view only; the match is paused meanwhile (PauseUpdate). The
 // HUD menu of every root handles the event "open_ingame_menu" (fields menuName, controller) by
 // opening the named menu as a popup; the menu here is the controls options
 // ("OptionsControlsMenu"), switched to its gamepad page: look inversion, vibration, stick
@@ -296,6 +297,31 @@ void Open(int slot) {
     Log("[menu] player %d menu opened", slot + 2);
 }
 
+// The match is paused while the menu of a shadow player is open (menu_pause=1), as player 1's
+// pause menu pauses it: the dvar cl_paused is 1 (UI_SetActiveMenu sets it for menu 3 and clears
+// it for menu 0). Player 1 closing its own pause menu clears the dvar, so it is set again in
+// every frame a menu is open; when the last menu closes it is cleared unless player 1's pause
+// menu is up.
+bool g_pauseHeld;
+void PauseUpdate() {
+    void* paused = *(void**)engine::kClPausedDvar;
+    if (!paused) return;
+    bool want = g_p2.started && (g_slot[0].open || g_slot[1].open || g_slot[2].open) && ReadIniInt(L"menu_pause", 1);
+    if (want) {
+        if (engine::DvarIntValue(paused) == 0) {
+            engine::DvarSetInt(paused, 1);
+            Log("[menu] match paused for a player's menu");
+        }
+        g_pauseHeld = true;
+    } else if (g_pauseHeld) {
+        g_pauseHeld = false;
+        if (*(const int*)engine::kActiveMenu != 3) {
+            engine::DvarSetInt(paused, 0);
+            Log("[menu] match resumed");
+        }
+    }
+}
+
 // Pad buttons that drive the menu: XInput mask and the LUI button name.
 const struct {
     WORD mask;
@@ -437,6 +463,7 @@ void ShadowMenuFrame() {
         }
         if (s.closeSeen) Close(slot, "closed by the menu");
     }
+    PauseUpdate();
 }
 
 // UI_SetActiveMenu 0x0070d370(lc, menuId). While a shadow player's menu handles an event the
