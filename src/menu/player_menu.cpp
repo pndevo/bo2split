@@ -7,8 +7,8 @@
 
 // The game's own controller options for players 2 to 4 (player_menu=1).
 //
-// Start on a shadow player's pad opens a menu of the game's Lua interface in that player's own
-// LUI root (hud.cpp), so it shows inside the player's view only; the match is paused meanwhile (PauseUpdate). The
+// With the pause menu every shadow player gets a menu of the game's Lua interface in its own LUI
+// root (hud.cpp), so it shows inside the player's view only (ShadowMenuFrame, PauseUpdate). The
 // HUD menu of every root handles the event "open_ingame_menu" (fields menuName, controller) by
 // opening the named menu as a popup; the menu here is the controls options
 // ("OptionsControlsMenu"), switched to its gamepad page: look inversion, vibration, stick
@@ -130,9 +130,34 @@ ShadowSettings ReadProfile() {
     return v;
 }
 
-// Between ScopeEnter and ScopeLeave the profile block of controller 0 is the slot's.
+void BackClosesMenu(bool on);
+
+// The menu code keeps one element for all roots in LUI.currentMouseFocus: an element that gains
+// the focus puts itself there (also through a pad button), and an element the cursor comes over
+// sends "lose_focus" to the one that is there. So player 1's cursor took the focus from the item
+// of a shadow player's menu, and a menu without a focused item ignores the pad. While a shadow
+// player's menu is built or handles an event the field is empty, and player 1's element waits
+// in a field of its own (inside the table, so that it is not collected).
+void MouseFocusMine(bool on) {
+    const char* held = on ? "currentMouseFocus" : "currentMouseFocusOfPlayer1";
+    const char* other = on ? "currentMouseFocusOfPlayer1" : "currentMouseFocus";
+    unsigned long long value = 0;
+    if (!LuiTableGet("_G", "LUI", held, &value)) {
+        static bool logged;
+        if (!logged) Log("[menu] the table LUI was not found, the mouse focus stays shared");
+        logged = true;
+        return;
+    }
+    LuiTableSet("_G", "LUI", other, value);
+    LuiTableSet("_G", "LUI", held, 0);
+}
+
+// Between ScopeEnter and ScopeLeave the profile block of controller 0 is the slot's, and "Back"
+// of the controls options closes them (BackClosesMenu).
 bool ScopeEnter(int slot) {
     if (g_scope >= 0) return false;
+    BackClosesMenu(true);
+    MouseFocusMine(true);
     Slot& p = g_slot[slot];
     memcpy(g_profileSaved, (const void*)kProfile, kProfileSize);
     g_scope = slot;
@@ -174,6 +199,8 @@ void ScopeLeave() {
     memcpy(p.profile, (const void*)kProfile, kProfileSize);
     memcpy((void*)kProfile, g_profileSaved, kProfileSize);
     g_scope = -1;
+    BackClosesMenu(false);
+    MouseFocusMine(false);
 }
 struct Scope {
     bool entered;
@@ -238,9 +265,10 @@ bool Press(int slot, const char* button) {
 
 // "Back" on the controls options leads to the options menu above them (graphics, sound: the
 // settings of the whole game). A menu takes its handlers from the table CoD.OptionsControls
-// when it is built, so while a shadow player's menu is open the entry Back is the entry
-// CloseMenu (which closes the options and tells the HUD). The original stays in the table
-// under another name: a function nothing refers to would be collected.
+// when it is built, so while a shadow player's menu is built or handles an event the entry Back
+// is the entry CloseMenu (which closes the options and tells the HUD). The original stays in the
+// table under another name: a function nothing refers to would be collected. Outside those
+// moments the table is the game's, so player 1's own options keep their Back.
 void BackClosesMenu(bool on) {
     unsigned long long back = 0, saved = 0, close = 0;
     if (!LuiTableGet("CoD", "OptionsControls", "Back", &back) ||
@@ -269,7 +297,6 @@ void Close(int slot, const char* why) {
     const char* fields[] = {"occluded", "false"};
     SendEvent(slot, "occlusion_change", fields, 1);
     Log("[menu] player %d menu closed (%s)", slot + 2, why);
-    if (!g_slot[0].open && !g_slot[1].open && !g_slot[2].open) BackClosesMenu(false);
 }
 
 void Open(int slot) {
@@ -284,7 +311,6 @@ void Open(int slot) {
     memcpy((uint8_t*)&tabValue + 4, &tabNumber, 4);
     if (!LuiTableSet("CoD", "OptionsControls", "CurrentTabIndex", tabValue))
         Log("[menu] player %d: the options page could not be chosen", slot + 2);
-    BackClosesMenu(true);
     if (!SendEvent(slot, "open_ingame_menu", fields, 1)) {
         Log("[menu] player %d: no HUD root, menu not opened", slot + 2);
         return;
@@ -298,45 +324,40 @@ void Open(int slot) {
     Log("[menu] player %d menu opened", slot + 2);
 }
 
-// The match is paused while the menu of a shadow player is open, as player 1's
-// pause menu pauses it: the dvar cl_paused is 1 (UI_SetActiveMenu sets it for menu 3 and clears
-// it for menu 0). Player 1 closing its own pause menu clears the dvar, so it is set again in
-// every frame a menu is open; when the last menu closes it is cleared unless player 1's pause
-// menu is up.
+// The match stays paused as long as a menu of a shadow player is open: the pause is the dvar
+// cl_paused (UI_SetActiveMenu sets it for player 1's pause menu, menu 3, and clears it for menu
+// 0). Player 1's pause menu closing clears the dvar while the other menus still take a moment
+// to close, so it is set again until the last one is gone.
 //
 // The client's server time is its clock plus a delta, computed per frame while the match is not
-// paused (0x00546e30), and the clock moves on during a pause. The engine's own pause marks the
-// client (0x00546df0), and the first frame after the pause then sets the time to that of the
-// newest snapshot: a step of up to one server frame (50 ms) in one picture, seen as a short
-// stutter. Here the delta is taken back by the clock's advance in every paused frame instead
-// so the time goes on from where it stood. The mark is used only where
-// that cannot hold: the dvar was cleared by someone else while a menu was open, so a frame may
-// have run with the clock ahead.
-bool g_pauseHeld;
-int g_pauseClock; // the client clock up to which the pause is taken out of the delta
+// paused (0x00546e30), and the clock moves on during a pause. The engine marks the client when
+// it pauses (0x00546df0, cl+0x2ac0), and the first frame after the pause then sets the time to
+// that of the newest snapshot: a step of up to one server frame (50 ms) in one picture, seen as
+// a short stutter. Here the mark is cleared, and the delta is taken back by the clock's advance
+// in every frame in which the pause kept the time from being computed, so the time goes on from
+// where it stood.
 void PauseUpdate() {
-    void* paused = *(void**)engine::kClPausedDvar;
-    if (!paused) return;
+    void* dvar = *(void**)engine::kClPausedDvar;
     uint8_t* cl = *(uint8_t**)engine::kClPtr;
-    bool want = cl && g_p2.started && (g_slot[0].open || g_slot[1].open || g_slot[2].open);
-    if (!want && !g_pauseHeld) return;
-    int clock = *(const int*)engine::kClClock;
-    bool running = engine::DvarIntValue(paused) == 0;
-    if (g_pauseHeld && !running && cl) *(int*)(cl + engine::kClServerTimeDelta) -= clock - g_pauseClock;
-    g_pauseClock = clock;
+    if (!dvar || !cl) return;
+    static int lastTime, lastClock;
+    static bool wasPaused, held;
+    int clock = *(const int*)engine::kClClock, time = *(const int*)(cl + engine::kClServerTime);
+    bool paused = engine::DvarIntValue(dvar) != 0;
+    if (g_p2.started) {
+        if ((paused || wasPaused) && time == lastTime) *(int*)(cl + engine::kClServerTimeDelta) -= clock - lastClock;
+        if (paused) *(int*)(cl + engine::kClPauseMark) = 0;
+    }
+    lastTime = time;
+    lastClock = clock;
+    wasPaused = paused;
+    bool want = g_p2.started && (g_slot[0].open || g_slot[1].open || g_slot[2].open);
     if (want) {
-        if (running) {
-            engine::DvarSetInt(paused, 1);
-            if (g_pauseHeld) ((void(__cdecl*)())engine::kClResyncAfterPause)();
-            if (!g_pauseHeld) Log("[menu] match paused for a player's menu");
-        }
-        g_pauseHeld = true;
-    } else {
-        g_pauseHeld = false;
-        if (*(const int*)engine::kActiveMenu != 3) {
-            engine::DvarSetInt(paused, 0);
-            Log("[menu] match resumed");
-        }
+        if (!paused) engine::DvarSetInt(dvar, 1);
+        held = true;
+    } else if (held) {
+        held = false;
+        if (paused && *(const int*)engine::kActiveMenu != 3) engine::DvarSetInt(dvar, 0);
     }
 }
 
@@ -389,24 +410,54 @@ bool ShadowMenuButton(int slot, const char* button) {
 
 // Once per frame after the view passes (from the hook of hud.cpp that draws the menus), with
 // player 1's cgame block in place.
+//
+// The menus of all players open and close together, and player 1's pause menu leads: Start on
+// the pad of a player 2 to 4 toggles player 1's pause menu (as its own Start or Escape does),
+// and when that menu comes up every player 2 to 4 gets its controller options, when it goes
+// they close. B closes a player's own menu alone.
 void ShadowMenuFrame() {
     DWORD now = GetTickCount();
+    static bool pauseMenuUp;
+    bool up = g_p2.started && *(const int*)engine::kActiveMenu == 3;
+    bool cameUp = up && !pauseMenuUp, went = !up && pauseMenuUp;
+    pauseMenuUp = up;
+    // The toggle of the binding "togglemenu", CL_ToggleMenu 0x00556870(lc): opens UI menu 3 when
+    // no menu is up and closes it when it is the active one. It reads cg->time without a null
+    // check and needs player 1's cgame block in place, as it is here.
+    // Closing goes the way B does in that menu: "back" to player 1's root until the menu is gone
+    // (from a page of the settings that takes several steps).
+    static DWORD closingSince, closingNext;
+    if (!up) closingSince = 0;
+    ShadowControlsMenuButtonFrame();
+    if (ShadowControlsTakePauseToggle() && g_p2.started && !g_p2.inContext && *(void**)engine::kCg &&
+        *(const uint32_t*)(engine::kUiState + 8) == 10) {
+        Log("[menu] pause menu %s from the pad of a player 2 to 4", up ? "closed" : "opened");
+        if (!up)
+            engine::CL_ToggleMenu(0);
+        else if (!closingSince) {
+            closingSince = now ? now : 1;
+            closingNext = now;
+        }
+    }
+    if (closingSince && now - closingSince > 3000) closingSince = 0;
+    if (closingSince && (LONG)(now - closingNext) >= 0) {
+        closingNext = now + 150;
+        const char* down[] = {"button", "secondary", "down", "true", "immediate", "true"};
+        const char* release[] = {"button", "secondary", "down", "false", "immediate", "true"};
+        ShadowHudEvent(0, "gamepad_button", 0, down, 3);
+        ShadowHudEvent(0, "gamepad_button", 0, release, 3);
+    }
     for (int slot = 0; slot < 3; ++slot) {
         Slot& s = g_slot[slot];
         if (s.open && (!g_p2.started || s.match != g_p2.startedTick)) Close(slot, "match over");
         if (s.open && s.closeSeen) Close(slot, "closed by the menu");
         if (!g_p2.started) InterlockedExchange(&s.toggle, 0);
         if (!g_p2.started || g_p2.inContext) continue;
-        bool toggle = InterlockedExchange(&s.toggle, 0) != 0;
-        if (toggle) {
-            if (!s.open) {
-                if (ReadIniInt(L"player_menu", 1)) Open(slot);
-                continue;
-            }
-            if (!s.closingSince) {
-                s.closingSince = now ? now : 1;
-                s.closingNext = now;
-            }
+        if (InterlockedExchange(&s.toggle, 0) != 0) ShadowControlsPauseToggle();
+        if (cameUp && !s.open && ShadowHudReady(slot) && ReadIniInt(L"player_menu", 1)) Open(slot);
+        if (went && s.open && !s.closingSince) {
+            s.closingSince = now ? now : 1;
+            s.closingNext = now;
         }
         // The scoreboard while its button is held (player_scores=1). The HUD menu of every root
         // opens its scoreboard on the event "open_scoreboard_menu" and closes it on
@@ -427,7 +478,7 @@ void ShadowMenuFrame() {
             }
         }
         if (!s.open) continue;
-        // Start closes the menu the way B does: "back" until the menu is gone. From a layout page
+        // The end of the pause closes the menu the way B does: "back" until the menu is gone. From a layout page
         // that takes two steps, and the page in between is built in the tick after the first.
         if (s.closingSince) {
             if ((LONG)(now - s.closingNext) >= 0) {
@@ -436,9 +487,9 @@ void ShadowMenuFrame() {
                 SendButton(slot, "secondary", false);
             }
             if (s.closeSeen)
-                Close(slot, "start button");
+                Close(slot, "pause over");
             else if (now - s.closingSince > 2000)
-                Close(slot, "start button, the menu did not answer");
+                Close(slot, "pause over, the menu did not answer");
             continue;
         }
         if (s.skipAt && (LONG)(now - s.skipAt) >= 0) {
@@ -493,6 +544,10 @@ static int __cdecl HookSetActiveMenu(int lc, int menu) {
         Log("[menu] player %d: the menu asks for UI menu %d", g_scope + 2, menu);
         return 0;
     }
+    if (ShadowHudLuaRunning()) {
+        Log("[menu] the root of a player 2 to 4 asks for UI menu %d: left alone", menu);
+        return 0;
+    }
     return oSetActiveMenu(lc, menu);
 }
 static const uint8_t kProSetActiveMenu[] = {0x51, 0x53, 0x55, 0x56, 0x57};
@@ -530,17 +585,25 @@ static const uint8_t kProSetHardwareValue[] = {0x83, 0xec, 0x18, 0x80, 0x3d, 0xa
 // on) 0x00938510 and Engine.BlurWorld(controller, ...) 0x00938580: the menu code calls them when
 // the first menu of a controller opens and the last one closes (input of that controller to the
 // menus, HUD away, world blurred). From a shadow player's menu they would do that to player 1,
-// so they do nothing then.
+// so they do nothing then, nor from the root of a shadow player after its menu closed (the
+// menu's end comes in a later tick of the root): player 1's own pause menu may be up.
 typedef int(__cdecl* LuaFunction_t)(uint8_t*);
 static LuaFunction_t oLockInput, oSetUIActive, oBlurWorld;
+static bool NotPlayer1(const char* what) {
+    if (g_scope >= 0) return true;
+    if (!ShadowHudLuaRunning()) return false;
+    static int logLeft = 12;
+    if (logLeft > 0 && logLeft--) Log("[menu] %s from the root of a player 2 to 4 outside its menu: left alone", what);
+    return true;
+}
 static int __cdecl HookLockInput(uint8_t* L) {
-    return g_scope >= 0 ? 0 : oLockInput(L);
+    return NotPlayer1("Engine.LockInput") ? 0 : oLockInput(L);
 }
 static int __cdecl HookSetUIActive(uint8_t* L) {
-    return g_scope >= 0 ? 0 : oSetUIActive(L);
+    return NotPlayer1("Engine.SetUIActive") ? 0 : oSetUIActive(L);
 }
 static int __cdecl HookBlurWorld(uint8_t* L) {
-    return g_scope >= 0 ? 0 : oBlurWorld(L);
+    return NotPlayer1("Engine.BlurWorld") ? 0 : oBlurWorld(L);
 }
 static const uint8_t kProLuaFunction[] = {0x56, 0x8b, 0x74, 0x24, 0x08};
 

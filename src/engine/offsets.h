@@ -11,11 +11,15 @@
 namespace engine {
 
 // --- Client block (cl, one per local client) ---
-constexpr int kClSnapshot = 0x50;    // the current snapshot, stored inside the client block; its first dword is
-                                     // non-zero once a snapshot has arrived
-constexpr int kClPlayerState = 0x70; // the playerState of the current snapshot
+constexpr int kClSnapshot = 0x50;     // the current snapshot, stored inside the client block; its first dword is
+                                      // non-zero once a snapshot has arrived
+constexpr int kClPlayerState = 0x70;  // the playerState of the current snapshot
+constexpr int kClServerTime = 0x2aa4; // int: the client's server time, computed per frame while the match is not paused
 constexpr int kClServerTimeDelta =
-    0x2ab0; // int: the client's server time (cl+0x2aa4) is the client clock (kClClock) plus this, set anew per frame
+    0x2ab0; // int: the client's server time (cl+0x2aa4) is the client clock (kClClock) plus this
+
+constexpr int kClPauseMark =
+    0x2ac0; // int: set when the engine pauses; the first frame after the pause then takes the newest snapshot's time
 
 // --- playerState ---
 constexpr size_t kPlayerStateSize = 0x2a08;
