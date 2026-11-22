@@ -110,7 +110,11 @@ jobs:
 
           ## Install
 
-          Put Steam into offline mode, then copy ``XINPUT1_3.dll`` and ``bo2ss.ini`` from the zip into the game folder, next to ``t6zm.exe``. The README in the zip has the rest.
+          1. Copy ``XINPUT1_3.dll`` and ``bo2ss.ini`` from the zip into the game folder, next to ``t6zm.exe``.
+          2. Get the game's script update, once: start the game one time while Steam is online. A message tells when the file is saved. **Without it no match starts.**
+          3. Put Steam into offline mode and start the game.
+
+          The README in the zip has the details, and a download as a second way to get the script update.
 
           ## Checksums (SHA256)
 
