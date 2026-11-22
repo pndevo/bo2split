@@ -10,7 +10,7 @@
 ![Renderer](https://img.shields.io/badge/renderer-Direct3D%2011-informational)
 ![Licence](https://img.shields.io/badge/licence-MIT-green)
 
-[Install](#install) · [Start a match](#start-a-match) · [Controls](#controls) · [Settings](#settings) · [Known limits](#known-limits) · [How it works](#how-it-works) · [Changes](CHANGELOG.md)
+[Install](#install) · [Start a match](#start-a-match) · [Settings and controls](#settings-and-controls) · [Known limits](#known-limits) · [How it works](#how-it-works) · [Changes](CHANGELOG.md)
 
 ![Four players on one screen](img/four-players.jpg)
 
@@ -60,15 +60,21 @@ To remove the mod, delete `XINPUT1_3.dll` from the game folder.
 
 ### The script update (needed once)
 
-Black Ops II does not keep all of its Zombies scripts on disk. A small file with the rest, the "fix of the day" (`ffotd_tu17_zm_147.ff`, 72 KB), is downloaded into memory every time the game starts while Steam is online, and is gone when the game closes. In offline mode the game never gets it, and a match then stops at the start with a script error (`Unresolved external: 'checkscorelimit'`). The mod loads the file from `zone\all\` in the game folder. There are two ways to put it there:
+**What it is.** Black Ops II does not keep all of its Zombies scripts on disk. The rest is in a small file the developers called the "fix of the day" (`ffotd_tu17_zm_147.ff`, 72 KB). They used it to change scripts without a full game update. It carries the core script of the game mode (`_globallogic.gsc`) and three fixes for Origins.
 
-**A. Let the game fetch it (recommended).** With the mod installed, start Black Ops II Zombies once while Steam is **online**. The mod changes nothing in the game in this mode. A few seconds after the start, when the game has fetched the file, the mod writes it to `zone\all\ffotd_tu17_zm_147.ff` and shows a message. Close the game, go offline in Steam, start again.
+**Why it is needed.** The game downloads this file into memory every time it starts while Steam is online, and it is gone when the game closes. In offline mode the game never gets it, and a match then stops at the start with a script error (`Unresolved external: 'checkscorelimit'`). Split-screen runs in offline mode, so the file has to be on disk: the mod loads it from the folder `zone\all\` of the game. It is the game's own file, unchanged, and it is needed only once.
+
+There are two ways to put it there.
+
+**A. Let the game fetch it.** With the mod installed, start Black Ops II Zombies once while Steam is **online**. A few seconds after the start, when the game has fetched the file, the mod writes it to `zone\all\ffotd_tu17_zm_147.ff` and shows a message. Close the game, go offline in Steam, start again.
 
 ![The message after the script update has been saved](img/script-update-saved.jpg)
 
-**B. Download it.** The Plutonium project hosts the same file: <https://cdn.plutoniummod.com/updater/prod/files/ea85be352df0b4d029c4e406ae8d6beec1dcf10c>. Save it as `ffotd_tu17_zm_147.ff` in the folder `zone\all\` of the game. Its SHA-256 is `347ab6bd03af40fbe32bd0b7aa60c80671227b5ab25c6da7178f6e996a7b2e5f`; in PowerShell: `Get-FileHash ffotd_tu17_zm_147.ff`. The address belongs to another project and may change.
+> **About going online with the mod in the game folder.** While Steam is online the mod changes nothing in the game: no patch, no hook, it only reads the downloaded file from memory and writes it to disk. Still, the game then runs online with a DLL in its folder that is not part of the game, and Black Ops II is protected by VAC. Nobody can promise what an anti-cheat system makes of that. If you do not want to take that risk, which is understandable, use way B: it never starts the game online with the mod.
 
-If the file is missing in offline mode, the mod says so in a message at the start and does not open the lobby. Background: [issue #7](https://github.com/pndevo/bo2split/issues/7).
+**B. Download it, without going online.** The Plutonium project hosts the same file: <https://cdn.plutoniummod.com/updater/prod/files/ea85be352df0b4d029c4e406ae8d6beec1dcf10c>. Save it as `ffotd_tu17_zm_147.ff` in the folder `zone\all\` of the game. To check the download: its SHA-256 is `347ab6bd03af40fbe32bd0b7aa60c80671227b5ab25c6da7178f6e996a7b2e5f` (in PowerShell: `Get-FileHash ffotd_tu17_zm_147.ff`). The address belongs to another project and may change.
+
+If the file is missing in offline mode, the mod says so in a message at the start, offers to open this section in the browser, and does not open the lobby. Background: [issue #7](https://github.com/pndevo/bo2split/issues/7).
 
 The mod writes `bo2ss.log` into the same folder. It is the file to attach to a bug report.
 
@@ -103,30 +109,21 @@ The mod hooks the engine at fixed addresses, so it is tied to this one build. An
 
 Requirements beyond those of the game itself have not been measured.
 
-## Controls
+## Settings and controls
 
-Player 1 plays through the game's own bindings. Players 2 to 4 use the layout of the console version on a gamepad:
+Everything works without touching a setting. To change one, start **`panel.bat`** in the game folder. It opens a settings window:
 
-| | |
-|---|---|
-| Sticks | Move and look; click left to sprint, click right for melee |
-| Triggers | Right fires, left aims down sights |
-| Bumpers | Right throws the lethal grenade, left the tactical one |
-| A / B / X / Y | Jump / crouch (hold: prone) / use and reload / next weapon |
-| D-pad | Action slots 1 to 4 |
-| Start | The player's own controller options, in the player's own view |
-| Back | Scoreboard in the player's own view, while held |
+![The settings window, tab "Players and pads"](img/settings-panel.png)
 
-The full tables, the keyboard and mouse layout and the controller options are in [docs/controls.md](docs/controls.md). The buttons can be reassigned with the `btn_*` settings.
+- The device of each player, chosen from a list or by pressing a button on it, the number of players and the split direction.
+- The action of each gamepad button of players 2 to 4.
+- Look and aim, screen layout, map and start.
 
-## Settings
+Most changes apply while the game runs. The window edits `bo2ss.ini` in the game folder; each setting there has a comment, and a setting that is left out has its default.
 
-Everything works without touching a setting. To change one:
+In a match, Start on the gamepad of a player 2 to 4 opens the game's own controller options in that player's view: look sensitivity, look inversion, stick layout and button layout, each player with values of its own. Player 1 uses the game's options as always.
 
-- **`panel.bat`** in the game folder opens a settings window: the device of each player (chosen from a list or by pressing a button on it), button layout, look and aim, screen layout, map and start. It edits `bo2ss.ini`, and most changes apply while the game runs.
-- **`bo2ss.ini`** in the game folder is the file itself. Each setting has a comment, and a setting that is left out has its default.
-
-Every setting is described in [docs/configuration.md](docs/configuration.md).
+The default layout of players 2 to 4 is the one of the console version. The tables, also for keyboard and mouse, are in [docs/controls.md](docs/controls.md); every setting is described in [docs/configuration.md](docs/configuration.md).
 
 ## Known limits
 
