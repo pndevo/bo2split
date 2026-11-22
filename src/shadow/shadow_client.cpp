@@ -67,6 +67,11 @@ bool ExtraAngles(int index, float* pitch, float* yaw) {
     *yaw = g_px[index].yaw;
     return true;
 }
+void ExtraSetAngles(int index, float pitch, float yaw) {
+    if (index < 0 || index > 1) return;
+    g_px[index].pitch = pitch > 85.0f ? 85.0f : pitch < -85.0f ? -85.0f : pitch;
+    g_px[index].yaw = yaw;
+}
 int ExtraWanted() {
     if (LobbyJoinOn()) return LobbyJoined() > 1 ? LobbyJoined() - 1 : 0; // players 3 and 4 from the lobby
     int n = ReadIniInt(L"extra_players", 0);

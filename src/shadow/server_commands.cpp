@@ -70,6 +70,7 @@ void ShadowServerCommands(int slot, uint8_t* cg) {
                 Log("[srvcmd] player %d: server id %u -> %d", slot + 2, *(const uint32_t*)(cl + shadowcl::kClServerId),
                     id);
                 *(uint32_t*)(cl + shadowcl::kClServerId) = (uint32_t)id;
+                ShadowHudResend(slot); // the restart reset the HUD: its lines are sent once more
             }
         }
     }
