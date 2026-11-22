@@ -61,7 +61,8 @@ uint8_t* ShadowSlotClc(
     int slot); // clientConnection of a shadow player (slot 0 = player 2, 1 / 2 = players 3 / 4), null while it is not in the game
 uint8_t* ShadowSlotCl(int slot); // the client struct of that shadow player, null while it is not in the game
 int ExtraWanted();               // players 3 and 4 that are to join this match (0..2), from the lobby or extra_players
-bool ExtraAngles(int index, float* pitch, float* yaw); // pad facing of extra client index (degrees)
+bool ExtraAngles(int index, float* pitch, float* yaw);  // pad facing of extra client index (degrees)
+void ExtraSetAngles(int index, float pitch, float yaw); // sets the pad facing of extra client index (degrees)
 void ShadowSetViewKick(int slot, float pitch, float yaw);
 extern float g_viewKick[3][2];
 void ShadowSetViewLook(int slot, float fovScale, float adsFrac); // turn rate inputs of a shadow player's view
@@ -205,6 +206,7 @@ void ShadowMenuToggle(int slot);                      // Start on the player's p
 void ShadowControlsPauseToggle();                     // asks for the toggle of player 1's pause menu
 bool ShadowHudLuaRunning();                           // the tick or an event of a shadow player's root runs
 bool ShadowHudReady(int slot);                        // the player has a HUD root of its own
+void ShadowHudResend(int slot);                       // sends that root every score line and client field again
 bool ShadowMenuButton(int slot, const char* button);  // a menu button, press and release
 void ShadowMenuFrame();
 bool ShadowMenuTickBegin(int slot); // the player's profile for the tick of its root; true = call ShadowMenuTickEnd

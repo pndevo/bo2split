@@ -98,6 +98,7 @@ bool SteamIsLoggedOn(bool* known);
 bool ScriptUpdateOnDisk(); // zone\all\ffotd_tu17_zm_147.ff exists
 void ScriptUpdateWatch();  // Steam online: writes the script update to that file once the game has fetched it
 void UpdateCheckStart();   // update_check=1: asks for the newest release once, on a thread (update_check.cpp)
+void OpenInBrowser(const wchar_t* url); // the default browser, started so that it is not a child process of the game
 void ExecCmd(const char* text);
 void AutoStartMatch();
 void __cdecl OfflineOnlineButton();

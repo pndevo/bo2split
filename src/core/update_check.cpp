@@ -20,6 +20,14 @@ constexpr wchar_t kPage[] = L"https://github.com/pndevo/bo2split/releases/latest
 constexpr int kTimeoutMs = 5000;
 } // namespace update
 
+// Opens an address in the default browser, through explorer.exe. A browser that the game
+// starts itself is a child process of the game, and Steam counts the game as running for as
+// long as that browser stays open: it refuses the next start with "game is already running".
+// explorer.exe hands the address to the desktop shell and ends; the browser is the shell's.
+void OpenInBrowser(const wchar_t* url) {
+    ShellExecuteW(nullptr, L"open", L"explorer.exe", url, nullptr, SW_SHOWNORMAL);
+}
+
 // "v1.2.3" or "1.2.3" -> three numbers; false when the text is not a version.
 static bool ParseVersion(const char* text, int out[3]) {
     if (*text == 'v' || *text == 'V') ++text;
@@ -116,7 +124,7 @@ static DWORD WINAPI UpdateCheckThread(LPVOID) {
                  L"This message comes once per version. update_check=0 in bo2ss.ini switches the check off.",
                  wtag, BO2SS_VERSION);
     if (MessageBoxW(nullptr, text, L"bo2split", MB_TOPMOST | MB_SETFOREGROUND | MB_YESNO | MB_ICONINFORMATION) == IDYES)
-        ShellExecuteW(nullptr, L"open", update::kPage, nullptr, nullptr, SW_SHOWNORMAL);
+        OpenInBrowser(update::kPage);
     return 0;
 }
 
