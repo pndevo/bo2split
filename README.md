@@ -20,7 +20,7 @@
 
 The PC version of Black Ops II never shipped the split-screen the consoles had. bo2split adds it: a single replacement `XINPUT1_3.dll` in the game folder, no second game instance, no second account, no window juggling. Plug in the gamepads, press A in the lobby, play.
 
-> **Offline and local only.** The mod acts only while the Steam client is in offline mode. While Steam is online it changes nothing in the game: no patch, no hook; it only saves the game's script update to the game folder (see [Install](#install)). Nothing is sent to any server, and there is no online play with it. It is for playing at one screen with friends.
+> **Offline and local only.** The mod acts only while the Steam client is in offline mode. While Steam is online it changes nothing in the game: no patch, no hook; it only saves the game's script update to the game folder (see [Install](#install)). Nothing about you or the game is sent to any server, and there is no online play with it. The only request the mod makes is one to GitHub at the start of the game, to ask whether a newer release is out; `update_check=0` in `bo2ss.ini` switches it off. It is for playing at one screen with friends.
 
 ## Features
 

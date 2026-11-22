@@ -134,6 +134,14 @@ The choices are written to `bo2ss_players.ini` in the game folder, one section p
 |---|---|---|---|
 | `trace` | How much the mod writes to `bo2ss.log` in the game folder. | 0 = a short log; 1 = also the game's console output, menu events and the state of the menus (a large file, for a bug report that needs it) | `0` |
 
+## Updates
+
+| Key | Meaning | Values | Default |
+|---|---|---|---|
+| `update_check` | The mod asks GitHub once per start of the game whether a newer release is out. Read when the game starts. | 1 = one request for the newest release of the project; a newer one is announced in a message, once per version, with an offer to open the release page. 0 = no request | `1` |
+
+The request is a plain read of the public release list. It carries nothing about the player or the game, and the mod never downloads or installs anything: an update is done by hand, by replacing `XINPUT1_3.dll`. The version that was announced last is kept in the file as `update_seen`.
+
 ## The settings window
 
 `panel.bat` opens a window that edits `bo2ss.ini`. Copy `panel.ps1` and `panel.bat` into the game folder, next to `t6zm.exe`, and double click `panel.bat`. The window changes the same file the mod reads, and the mod reads most keys every frame, so a change shows in a running game. A key that the file does not have yet is added at the end of the file the first time it is changed. The window also notices when the file is changed from outside (a text editor) and shows the new values.

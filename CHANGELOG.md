@@ -2,9 +2,11 @@
 
 All notable changes to bo2split are listed here, newest first. Each version has a release with the built DLL.
 
-To release: rename the section "Unreleased" to the new version (`## v1.2.3`), add an empty "Unreleased" above it, and merge `develop` into `main`. The workflow then tags the merge and makes the release with this section as its text.
+To release: rename the section "Unreleased" to the new version (`## v1.2.3`), add an empty "Unreleased" above it, set the same number in `src/core/version.h`, and merge `develop` into `main`. The workflow then tags the merge and makes the release with this section as its text.
 
 ## Unreleased
+
+- The mod tells when a newer release is out: once per start of the game it asks GitHub for the newest release and shows a message, once per version, with an offer to open the release page. It downloads and installs nothing. `update_check=0` in `bo2ss.ini` switches the request off.
 
 ## v0.2.0
 

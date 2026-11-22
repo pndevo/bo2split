@@ -23,6 +23,8 @@ The mod writes `bo2ss.log` into the game folder, next to `bo2ss.ini`. The file i
 | `pad 0: connected` and so on | Which XInput pads Windows reports at start. |
 | `steam client: offline mode` | The mod works. `steam client: ONLINE, the mod stays passive (nothing patched, nothing hooked)` means Steam is online: the game runs unchanged, and Steam must be put into offline mode for split-screen. |
 | `[bo2ss] script update: 71808 bytes saved to ...` | Steam was online, the game fetched its script update and the mod wrote it to `zone\all\ffotd_tu17_zm_147.ff`. `the file on disk is current` means it was there already. `writing ... FAILED` means the game folder could not be written to. |
+| `version v0.2.0` | The version of the DLL. |
+| `[update] this is v0.2.0, the newest release is v0.2.0: up to date` | The update check got an answer. `release v... is out` means a newer release exists; `no answer about the newest release` means no connection or an unexpected answer; `check switched off` means `update_check=0`. |
 | `[bo2ss] script update missing (...): the lobby stays closed` | Offline mode without the script update. Get it as the README describes under "The script update". |
 
 **The split has started** when these lines are in the log, in this order:
