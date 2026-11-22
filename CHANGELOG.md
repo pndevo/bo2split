@@ -6,6 +6,11 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+## v0.2.3
+
+- Fixed: after "Restart level" the HUD of players 2 to 4 could miss the score line of another player until that player's score changed. The score lines are sent to them again after a restart.
+- Fixed: after "Yes" in one of the mod's messages (a newer release is out, the script update is missing) Steam could refuse the next start of the game with "game is already running". The browser was started by the game, and Steam counted the game as running until that browser was closed. The page is now opened so that the browser does not belong to the game. Until you have this version: close the browser, then start the game again.
+
 ## v0.2.2
 
 - Fixed: with three or four players a second match in the same session ended with "UI Error" right after its start. The HUD of players 3 and 4 from the match before was drawn until those players had joined again; it is now dropped when the new match starts.
