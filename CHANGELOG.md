@@ -8,6 +8,9 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## v0.2.0
 
+- Fixed: no match started on an installation that never had the game's script update on disk; the start ended with `Unresolved external: 'checkscorelimit'`. The file was never part of a release and the README did not name it. The mod now saves it by itself: start the game once while Steam is online, a message tells when the file is written. The README describes this and a download as a second way. ([#7](https://github.com/pndevo/bo2split/issues/7))
+- Without the script update the mod no longer opens the lobby in offline mode; a message says what to do.
+- While Steam is online the mod leaves the game untouched: no patch, no hook. Before, the sign-in patches were applied in that case too, and the game stayed at "Connecting to online service".
 - Start on any gamepad pauses the match for everyone. Player 1 gets the pause menu, every player 2 to 4 its controller options; Start again closes all menus and the match goes on. Before, Start of a player 2 to 4 opened only that player's options and the match went on.
 - Player 1's pause menu is drawn inside player 1's view, not across the views. `pause_menu_in_view=0` in `bo2ss.ini` brings the old place back.
 - Fixed: player 1's mouse cursor moved the highlight in the menus of the other players.

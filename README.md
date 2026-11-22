@@ -20,7 +20,7 @@
 
 The PC version of Black Ops II never shipped the split-screen the consoles had. bo2split adds it: a single replacement `XINPUT1_3.dll` in the game folder, no second game instance, no second account, no window juggling. Plug in the gamepads, press A in the lobby, play.
 
-> **Offline and local only.** The mod acts only while the Steam client is in offline mode; while Steam is online it refuses to change anything. Nothing is sent to any server, and there is no online play with it. It is for playing at one screen with friends.
+> **Offline and local only.** The mod acts only while the Steam client is in offline mode. While Steam is online it changes nothing in the game: no patch, no hook; it only saves the game's script update to the game folder (see [Install](#install)). Nothing is sent to any server, and there is no online play with it. It is for playing at one screen with friends.
 
 ## Features
 
@@ -51,11 +51,24 @@ The split direction is `split_vertical`, the layout with three players `layout_t
 
 ## Install
 
-1. Put Steam into offline mode (Steam menu, "Go Offline").
-2. Copy `XINPUT1_3.dll` and `bo2ss.ini` into the game folder, next to `t6zm.exe`. In the Steam library: right click the game, Manage, Browse local files.
-3. Optional: copy `panel.ps1` and `panel.bat` there too, for the settings window.
+1. Copy `XINPUT1_3.dll` and `bo2ss.ini` into the game folder, next to `t6zm.exe`. In the Steam library: right click the game, Manage, Browse local files.
+2. Get the game's script update, once (see below). **Without it no match starts.**
+3. Put Steam into offline mode (Steam menu, "Go Offline").
+4. Optional: copy `panel.ps1` and `panel.bat` into the game folder too, for the settings window.
 
 To remove the mod, delete `XINPUT1_3.dll` from the game folder.
+
+### The script update (needed once)
+
+Black Ops II does not keep all of its Zombies scripts on disk. A small file with the rest, the "fix of the day" (`ffotd_tu17_zm_147.ff`, 72 KB), is downloaded into memory every time the game starts while Steam is online, and is gone when the game closes. In offline mode the game never gets it, and a match then stops at the start with a script error (`Unresolved external: 'checkscorelimit'`). The mod loads the file from `zone\all\` in the game folder. There are two ways to put it there:
+
+**A. Let the game fetch it (recommended).** With the mod installed, start Black Ops II Zombies once while Steam is **online**. The mod changes nothing in the game in this mode. A few seconds after the start, when the game has fetched the file, the mod writes it to `zone\all\ffotd_tu17_zm_147.ff` and shows a message. Close the game, go offline in Steam, start again.
+
+![The message after the script update has been saved](img/script-update-saved.jpg)
+
+**B. Download it.** The Plutonium project hosts the same file: <https://cdn.plutoniummod.com/updater/prod/files/ea85be352df0b4d029c4e406ae8d6beec1dcf10c>. Save it as `ffotd_tu17_zm_147.ff` in the folder `zone\all\` of the game. Its SHA-256 is `347ab6bd03af40fbe32bd0b7aa60c80671227b5ab25c6da7178f6e996a7b2e5f`; in PowerShell: `Get-FileHash ffotd_tu17_zm_147.ff`. The address belongs to another project and may change.
+
+If the file is missing in offline mode, the mod says so in a message at the start and does not open the lobby. Background: [issue #7](https://github.com/pndevo/bo2split/issues/7).
 
 The mod writes `bo2ss.log` into the same folder. It is the file to attach to a bug report.
 
