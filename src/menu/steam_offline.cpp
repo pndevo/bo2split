@@ -3,6 +3,9 @@
 #include "engine/common.h"
 #include "engine/ui.h"
 
+#include <shellapi.h>
+#pragma comment(lib, "shell32.lib")
+
 // Steam offline mode: the "xsigninlive" command (Live_ConnectToDemonware, 0x00870a80)
 // shows PLATFORM_STEAM_OFFLINE when SteamUser()->BLoggedOn() is false.
 const BytePatch kSignInPatches[] = {
@@ -361,16 +364,26 @@ static DWORD WINAPI NoticeThread(LPVOID param) {
                     L"online. Details are in bo2ss.log.",
                     L"bo2split", flags | MB_OK | MB_ICONWARNING);
         break;
-    case kNoticeMissing:
-        MessageBoxW(nullptr,
-                    L"Split-screen cannot start a match yet: the game's script update is missing.\n\n"
-                    L"The game downloads it by itself when it starts while Steam is online. Do this once:\n"
-                    L"1. Close the game.\n"
-                    L"2. In Steam choose Steam > Go Online.\n"
-                    L"3. Start Black Ops II Zombies and wait for the message that the update has been saved.\n"
-                    L"4. Go offline in Steam again and start the game.",
-                    L"bo2split", flags | MB_OK | MB_ICONWARNING);
+    case kNoticeMissing: {
+        int answer = MessageBoxW(nullptr,
+                                 L"Split-screen cannot start a match yet: the game's script update is missing.\n\n"
+                                 L"What this is: Black Ops II keeps a part of its Zombies scripts in a small file, the "
+                                 L"\"fix of the day\" (ffotd_tu17_zm_147.ff). The game downloads it at every start "
+                                 L"while Steam is online and never keeps it. In offline mode it is therefore missing, "
+                                 L"and without it a match stops at the start with a script error.\n\n"
+                                 L"There are two ways to get it, once:\n\n"
+                                 L"A. Let the game fetch it. Close the game, choose Steam > Go Online in Steam, start "
+                                 L"Black Ops II Zombies and wait for the message that the update has been saved. Then "
+                                 L"go offline again and start the game.\n\n"
+                                 L"B. Download the file, without starting the game online. The README has the link "
+                                 L"and says where the file goes.\n\n"
+                                 L"Open the README in the browser now?",
+                                 L"bo2split", flags | MB_YESNO | MB_ICONWARNING);
+        if (answer == IDYES)
+            ShellExecuteW(nullptr, L"open", L"https://github.com/pndevo/bo2split#the-script-update-needed-once",
+                          nullptr, nullptr, SW_SHOWNORMAL);
         break;
+    }
     }
     InterlockedExchange(&g_noticeOpen, 0);
     return 0;
