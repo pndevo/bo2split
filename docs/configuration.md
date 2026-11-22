@@ -3,7 +3,7 @@ title: Configuration
 kind: reference
 description: Every setting of bo2ss.ini with its meaning, values and default, grouped as in the file, the settings window that edits the file while the game runs, and where the switches that are not in the file are documented.
 status: active
-updated: 2026-11-19
+updated: 2026-11-22
 ---
 
 # Configuration
