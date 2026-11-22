@@ -18,6 +18,7 @@
 #include "core/common.h"
 #include "shadow/shadow.h"
 #include "core/dev.h"
+#include "core/version.h"
 #include "engine/common.h"
 #include "engine/client.h"
 
@@ -126,6 +127,7 @@ static void InitOnGameThread() {
                 "disk: %s",
                 ScriptUpdateOnDisk() ? "yes" : "no, it is saved once the game has fetched it");
             ScriptUpdateWatch();
+            UpdateCheckStart();
             return;
         }
     }
@@ -198,6 +200,7 @@ static void InitOnGameThread() {
             InstallDetour(d);
     }
     DevInstallHooks(g_build->timestamp == 0x6a8332d9);
+    if (g_build->timestamp == 0x6a8332d9) UpdateCheckStart();
     for (DWORD pad = 0; pad < 4; ++pad) {
         uint8_t state[16];
         Log("pad %lu: %s", pad, pGetState && pGetState(pad, state) == ERROR_SUCCESS ? "connected" : "not connected");
@@ -425,6 +428,7 @@ BOOL WINAPI DllMain(HINSTANCE self, DWORD reason, LPVOID) {
     InitializeCriticalSection(&g_logLock);
     g_log = _wfsopen(logPath, L"w", _SH_DENYNO); // readable while the game runs
     Log("bo2ss build 2 %s loaded into %ls", DevVariant(), exe);
+    Log("version v" BO2SS_VERSION);
 
     AddVectoredExceptionHandler(1, OnException);
     g_active = true; // work starts at the first XInputGetState call or window timer tick
