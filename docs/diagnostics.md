@@ -3,7 +3,7 @@ title: Diagnostics
 kind: reference
 description: How to read bo2ss.log for a bug report, and the switches that are not in bo2ss.ini - the fix switches that turn single parts of the mod on and off, the experimental switches and the diagnostic switches that write extra lines to the log.
 status: active
-updated: 2026-11-15
+updated: 2026-11-22
 ---
 
 # Diagnostics
@@ -21,7 +21,9 @@ The mod writes `bo2ss.log` into the game folder, next to `bo2ss.ini`. The file i
 | `bo2ss build 2 release loaded into ...\t6zm.exe` | The DLL was loaded by the game. If this line is missing, the DLL is not in the game folder or the game loads another `XINPUT1_3.dll`. |
 | `game build: ... (timestamp ...)` | The executable is the build the mod knows. `unknown game image ...; nothing patched` means another build: the mod does nothing. |
 | `pad 0: connected` and so on | Which XInput pads Windows reports at start. |
-| `steam client: offline mode` | The mod works. `ONLINE (patched actions will be refused)` or `[bo2ss] REFUSED: Steam client is ONLINE` means Steam must be put into offline mode first. |
+| `steam client: offline mode` | The mod works. `steam client: ONLINE, the mod stays passive (nothing patched, nothing hooked)` means Steam is online: the game runs unchanged, and Steam must be put into offline mode for split-screen. |
+| `[bo2ss] script update: 71808 bytes saved to ...` | Steam was online, the game fetched its script update and the mod wrote it to `zone\all\ffotd_tu17_zm_147.ff`. `the file on disk is current` means it was there already. `writing ... FAILED` means the game folder could not be written to. |
+| `[bo2ss] script update missing (...): the lobby stays closed` | Offline mode without the script update. Get it as the README describes under "The script update". |
 
 **The split has started** when these lines are in the log, in this order:
 
@@ -56,7 +58,7 @@ Each of these turns one part of the mod on or off. All are on (or at their worki
 | `lobby_hint_y` | `136` | Top of that line with one player in the list, in pixels of a 1920x1080 screen. |
 | `lobby_hint_step` | `45` | How far the line moves down for each joined player, in pixels of a 1920x1080 screen. |
 | `lobby_hint_scale` | `55` | Size of the line in percent. |
-| `load_ffotd` | `1` | Loads the game's script update file (`zone\all\ffotd_tu17_zm_147.ff`) from disk before the party starts. 0 skips it. |
+| `load_ffotd` | `1` | Loads the game's script update file (`zone\all\ffotd_tu17_zm_147.ff`) from disk before the party starts. 0 skips it, and also the check that keeps the lobby closed while the file is missing. |
 | `force_zombies_mode` | `1` | Makes sure the session is in zombies mode when the lobby opens. 0 leaves the engine's value. |
 | `offline_signin_fix` | `1` | Patch that skips the game's "Steam is offline" pop-up when the Online button is used. 0 does not apply it. |
 | `offline_fake_live` | `1` | Makes the Online button of the main menu call the mod, which opens the local lobby. 0 leaves the button alone, so no lobby opens. |

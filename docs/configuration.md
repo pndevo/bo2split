@@ -3,7 +3,7 @@ title: Configuration
 kind: reference
 description: Every setting of bo2ss.ini with its meaning, values and default, grouped as in the file, the settings window that edits the file while the game runs, and where the switches that are not in the file are documented.
 status: active
-updated: 2026-11-14
+updated: 2026-11-19
 ---
 
 # Configuration
@@ -87,7 +87,7 @@ One key per pad input. The value is the number of the action the input does. All
 | 10 | next weapon |
 | 11 to 14 | action slot 1 to 4 |
 | 15 | scoreboard in the player's own view, while held (`player_scores`) |
-| 16 | the player's own controller options (`player_menu`) |
+| 16 | pause and the menus of all players (`player_menu`) |
 | 17 | previous weapon |
 
 | Key | Meaning | Values | Default |
@@ -107,15 +107,16 @@ One key per pad input. The value is the number of the action the input does. All
 | `btn_dpad_left` | D-pad left | action number | `13` (action slot 3) |
 | `btn_dpad_right` | D-pad right | action number | `14` (action slot 4) |
 | `btn_back` | Back button | action number | `15` (scoreboard) |
-| `btn_start` | Start button | action number | `16` (controller options) |
+| `btn_start` | Start button | action number | `16` (pause and menus) |
 | `stance_hold_ms` | How long the crouch button is held to go prone, or to stand up from prone. | milliseconds | `300` |
-| `player_menu` | Start on the gamepad of a player 2 to 4 opens the game's controller options for that player, inside the player's own view. 0: Start opens player 1's pause menu instead. | 0 or 1 | `1` |
+| `player_menu` | While the match is paused every player 2 to 4 has the game's controller options inside its own view. 0: only player 1's pause menu opens. | 0 or 1 | `1` |
+| `pause_menu_in_view` | Player 1's pause menu is drawn inside player 1's view. 0: in the middle of the whole screen, across the views. | 0 or 1 | `1` |
 | `player_scores` | Holding Back on the gamepad of a player 2 to 4 shows the scoreboard inside that player's own view. | 0 or 1 | `1` |
 | `player_rumble` | The gamepads of players 2 to 4 vibrate as player 1's does. Each player can turn it off for itself with "Gamepad vibration" in its controller options. | 0 or 1 | `1` |
 
 ### Controller options of players 2 to 4
 
-With `player_menu=1` the Start button of a player 2 to 4 opens the gamepad page of the game's own controls options in that player's view. D-pad or left stick moves, A selects, B goes back, Start closes; the match goes on meanwhile. The page offers look inversion, stick layout (default, southpaw, legacy, legacy southpaw), button layout (default, tactical, lefty, N0M4D, charlie) and look sensitivity (1 to 14). A button layout changes which physical button does the action of which `btn_*` key: tactical swaps B and the right stick click, lefty swaps the triggers, the bumpers and the stick clicks, N0M4D is tactical with the aim button as a toggle, charlie puts the lethal grenade on the left trigger and the aim toggle on the right bumper. The look sensitivity multiplies the turn speed of the right stick; 4 (medium) is 1.0.
+With `player_menu=1` every player 2 to 4 gets the gamepad page of the game's own controls options in its view while the match is paused: Start on any gamepad, or Escape, pauses and opens the menus, and player 1 gets the pause menu. D-pad or left stick moves, A selects, B closes the player's own menu; Start again on any gamepad, or player 1 closing the pause menu, closes all of them and the match goes on. The page offers look inversion, stick layout (default, southpaw, legacy, legacy southpaw), button layout (default, tactical, lefty, N0M4D, charlie) and look sensitivity (1 to 14). A button layout changes which physical button does the action of which `btn_*` key: tactical swaps B and the right stick click, lefty swaps the triggers, the bumpers and the stick clicks, N0M4D is tactical with the aim button as a toggle, charlie puts the lethal grenade on the left trigger and the aim toggle on the right bumper. The look sensitivity multiplies the turn speed of the right stick; 4 (medium) is 1.0.
 
 The choices are written to `bo2ss_players.ini` in the game folder, one section per player (`[player2]` to `[player4]`), and read again at the next start:
 

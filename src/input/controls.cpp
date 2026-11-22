@@ -211,6 +211,7 @@ struct PlayerCtl {
     volatile bool scoresDown;    // scoreboard button held
     bool adsToggled, adsWasDown; // button layouts with an aim toggle
     int lastB;
+    volatile DWORD filled; // tick of the player's last usercmd (ShadowControlsButtons)
 };
 PlayerCtl g_ctl[3];
 volatile LONG g_menuPending; // pause menu toggle for the next OnFrame
@@ -281,6 +282,48 @@ const char* PadGlyph(int engineKey) {
 
 } // namespace
 
+// The menu button of a shadow player went down: the pause menu toggle, through the player's
+// menu code with player_menu=1.
+static void MenuPressed(int slot) {
+    Log("[ctl] player %d menu button", slot + 2);
+    if (ReadIniInt(L"player_menu", 1))
+        ShadowMenuToggle(slot);
+    else
+        InterlockedExchange(&g_menuPending, 1);
+}
+
+// Once per frame (from ShadowMenuFrame): the menu button of the players whose usercmds stand
+// still. While the match is paused no usercmd is built for players 3 and 4, so their pad is not
+// read by ShadowControlsButtons, and their Start could not end the pause or bring their menu
+// back.
+void ShadowControlsMenuButtonFrame() {
+    const Config& c = Cfg();
+    if (!g_p2.started || !c.startMenu || !pGetState) return;
+    DWORD now = GetTickCount();
+    for (int slot = 0; slot < 3; ++slot) {
+        PlayerCtl& s = g_ctl[slot];
+        if (!s.filled || now - s.filled < 150) continue; // its usercmds run: read there
+        struct {
+            DWORD packet;
+            WORD buttons;
+            BYTE lt, rt;
+            SHORT lx, ly, rx, ry;
+        } st = {};
+        int dev = PlayerInputDevice(slot + 1);
+        if (dev < 0 || pGetState((DWORD)dev, &st) != ERROR_SUCCESS) continue;
+        const int* layout = ButtonLayout(ShadowPlayerSettings(slot).buttons);
+        bool down = false;
+        for (int i = 0; i < kInputCount; ++i) {
+            const PadInput& in = kInputs[i];
+            bool held = in.trigger == 1 ? st.lt > 60 : in.trigger == 2 ? st.rt > 60 : (st.buttons & in.mask) != 0;
+            if (held && c.map[layout[i]] == kActMenu) down = true;
+        }
+        bool was = (s.prevActs & ActBit(kActMenu)) != 0;
+        s.prevActs = (s.prevActs & ~ActBit(kActMenu)) | (down ? ActBit(kActMenu) : 0);
+        if (down && !was) MenuPressed(slot);
+    }
+}
+
 // Called by the usercmd fill of a shadow player (slot 0 = player 2, 1 / 2 = players 3 / 4)
 // with its pad state and the actions held on keyboard and mouse. ORs the player's usercmd
 // bits into buttons / buttons2; the weapon cycle leaves as kWeapNextPseudoBit, which the
@@ -291,6 +334,7 @@ void ShadowControlsButtons(int slot, unsigned padButtons, unsigned lt, unsigned 
     if (slot < 0 || slot > 2) return;
     PlayerCtl& s = g_ctl[slot];
     DWORD now = GetTickCount();
+    s.filled = now ? now : 1;
     if (s.match != g_p2.startedTick) { // new match: standing, nothing held
         s.match = g_p2.startedTick;
         s.stance = {};
@@ -383,12 +427,7 @@ void ShadowControlsButtons(int slot, unsigned padButtons, unsigned lt, unsigned 
             b2 |= kBits2Slot1 >> n;
     }
     s.scoresDown = (acts & ActBit(kActScores)) != 0;
-    if ((pressed & ActBit(kActMenu)) && c.startMenu) {
-        if (ReadIniInt(L"player_menu", 1))
-            ShadowMenuToggle(slot); // the player's own options, inside its view
-        else
-            InterlockedExchange(&g_menuPending, 1);
-    }
+    if ((pressed & ActBit(kActMenu)) && c.startMenu) MenuPressed(slot);
 
     b |= (int)InterlockedExchange(&s.cgBits[0], 0);
     b2 |= (int)InterlockedExchange(&s.cgBits[1], 0);
@@ -470,16 +509,13 @@ bool ShadowControlsScoresHeld(int slot) {
     return slot >= 0 && slot <= 2 && g_ctl[slot].scoresDown;
 }
 
-// Called once per frame from OnFrame (player 1's context, outside the view passes): the
-// pause menu toggle of the "togglemenu" binding, CL_ToggleMenu 0x00556870(lc). It opens UI
-// menu 3 when no menu is up and closes it when it is the active one; it reads cg->time
-// without a null check.
-void ShadowControlsFrame() {
-    if (!InterlockedExchange(&g_menuPending, 0)) return;
-    if (!g_p2.started || g_p2.inContext || g_inRenderViews) return;
-    if (!*(void**)engine::kCg || *(const uint32_t*)(engine::kUiState + 8) != 10) return;
-    Log("[ctl] pause menu toggle from player 2's pad");
-    engine::CL_ToggleMenu(0);
+// Start on the pad of a player 2 to 4 asks for the pause menu toggle; the menu code takes the
+// request once per frame (ShadowMenuFrame) and carries it out.
+void ShadowControlsPauseToggle() {
+    InterlockedExchange(&g_menuPending, 1);
+}
+bool ShadowControlsTakePauseToggle() {
+    return InterlockedExchange(&g_menuPending, 0) != 0;
 }
 
 // CL_AddUserCmdButtons 0x00547580(lc, int bits[2]): cl+0x2c80 |= bits[0], cl+0x2c84 |=

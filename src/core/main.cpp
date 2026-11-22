@@ -99,14 +99,37 @@ static const GameBuild kBuilds[] = {
 
 static bool g_active; // set in DllMain for supported hosts
 static bool g_initDone;
+static bool g_passive; // Steam build while the Steam client is online: nothing is patched or hooked
 static const GameBuild* g_build;
 static DWORD g_nextStateLog;
 static uint32_t g_lastState[10];
 static unsigned g_frames;
 
 static void InitOnGameThread() {
-    g_initDone = true;
     uint32_t ts = ImageTimestamp(engine::kImageBase);
+    if (ts == 0x6a8332d9) {
+        // The Steam client's state decides everything below, so wait for steam_api (at most
+        // 3 s). Online the game stays as it is: no patch, no hook; the only work is saving
+        // the script update the game fetches (ScriptUpdateWatch).
+        static DWORD firstTry;
+        if (!firstTry) firstTry = GetTickCount();
+        bool known;
+        bool online = SteamIsLoggedOn(&known);
+        if (!known && GetTickCount() - firstTry < 3000) return;
+        if (known && online) {
+            g_initDone = true;
+            g_passive = true;
+            for (const GameBuild& b : kBuilds)
+                if (b.timestamp == ts) g_build = &b;
+            Log("game build: %s (timestamp %08x)", g_build->name, ts);
+            Log("steam client: ONLINE, the mod stays passive (nothing patched, nothing hooked); script update on "
+                "disk: %s",
+                ScriptUpdateOnDisk() ? "yes" : "no, it is saved once the game has fetched it");
+            ScriptUpdateWatch();
+            return;
+        }
+    }
+    g_initDone = true;
     for (const GameBuild& b : kBuilds)
         if (b.timestamp == ts) g_build = &b;
     if (!g_build) {
@@ -267,6 +290,7 @@ void OnFrame() {
     }
     if (!g_initDone) InitOnGameThread();
     if (!g_build) return;
+    if (g_passive) return;
     if (g_p2.inContext) ShadowStop("context still active in the gamepad hook");
     ++g_frames;
     DWORD t = GetTickCount();
@@ -308,10 +332,9 @@ void OnFrame() {
         }
     }
     DevFrame(g_build->clientUIActive0);
-    ShadowControlsFrame(); // pause menu toggle from player 2's pad
-    PInputFrame();         // logs the device per player when it changes
-    ShadowRumbleFrame();   // vibration of the shadow players' pads
-    LobbyFrame();          // lobby_join=1: pads join and leave in the lobby
+    PInputFrame();       // logs the device per player when it changes
+    ShadowRumbleFrame(); // vibration of the shadow players' pads
+    LobbyFrame();        // lobby_join=1: pads join and leave in the lobby
     // perf_log=1: every 5 s the frame rate, the ini lookups per frame and how many of them
     // went to the file.
     {

@@ -188,7 +188,8 @@ void ShadowControlsButtons(int slot, unsigned padButtons, unsigned lt, unsigned 
 unsigned ShadowControlsKbmActions();
 bool ShadowControlsTakeWeaponChange(int slot); // an action slot was pressed since the last call
 void ShadowControlsSecondPass(uint8_t* cg);
-void ShadowControlsFrame();
+void ShadowControlsMenuButtonFrame(); // the menu button of players whose usercmds stand still (pause)
+bool ShadowControlsTakePauseToggle(); // a pad asked for the pause menu toggle since the last call
 bool ShadowControlsScoresHeld(int slot);
 extern const Detour kControlsHooks[4];
 // player_menu.cpp (player_menu=1: the game's controller options for a shadow player, inside its view)
@@ -200,6 +201,9 @@ bool ShadowMenuOpen(int slot);                        // slot 0 = player 2
 bool ShadowScoresOpen(int slot);                      // the player holds its scoreboard open
 const ShadowSettings& ShadowPlayerSettings(int slot); // the values the player chose in its menu
 void ShadowMenuToggle(int slot);                      // Start on the player's pad
+void ShadowControlsPauseToggle();                     // asks for the toggle of player 1's pause menu
+bool ShadowHudLuaRunning();                           // the tick or an event of a shadow player's root runs
+bool ShadowHudReady(int slot);                        // the player has a HUD root of its own
 bool ShadowMenuButton(int slot, const char* button);  // a menu button, press and release
 void ShadowMenuFrame();
 bool ShadowMenuTickBegin(int slot); // the player's profile for the tick of its root; true = call ShadowMenuTickEnd

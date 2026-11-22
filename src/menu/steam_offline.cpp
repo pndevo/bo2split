@@ -3,6 +3,9 @@
 #include "engine/common.h"
 #include "engine/ui.h"
 
+#include <shellapi.h>
+#pragma comment(lib, "shell32.lib")
+
 // Steam offline mode: the "xsigninlive" command (Live_ConnectToDemonware, 0x00870a80)
 // shows PLATFORM_STEAM_OFFLINE when SteamUser()->BLoggedOn() is false.
 const BytePatch kSignInPatches[] = {
@@ -307,12 +310,159 @@ bool LuiButton(int controller, const char* button, const char* qualifier, bool d
 // zone\all\ffotd_tu17_zm_147.ff and run the engine's own FFOTD load step.
 namespace ffotd {
 constexpr size_t kMaxSize = 0x1ffe0;
+constexpr size_t kBufferSize = 0x20000;
 } // namespace ffotd
+
+static void ScriptUpdatePath(wchar_t* path) {
+    lstrcpynW(path, g_gameDir, MAX_PATH);
+    lstrcatW(path, L"zone\\all\\ffotd_tu17_zm_147.ff");
+}
+
+bool ScriptUpdateOnDisk() {
+    wchar_t path[MAX_PATH];
+    ScriptUpdatePath(path);
+    return GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES;
+}
+
+// A message window for the player, on a thread of its own so that the game keeps running
+// behind it. Only one is open at a time.
+enum Notice { kNoticeSaved, kNoticeSaveFailed, kNoticeMissing };
+static volatile LONG g_noticeOpen;
+
+static BOOL CALLBACK FindGameWindow(HWND window, LPARAM out) {
+    DWORD pid = 0;
+    GetWindowThreadProcessId(window, &pid);
+    if (pid != GetCurrentProcessId() || !IsWindowVisible(window) || GetWindow(window, GW_OWNER)) return TRUE;
+    *(HWND*)out = window;
+    return FALSE;
+}
+
+static DWORD WINAPI NoticeThread(LPVOID param) {
+    const UINT flags = MB_TOPMOST | MB_SETFOREGROUND;
+    switch ((Notice)(uintptr_t)param) {
+    case kNoticeSaved: {
+        int answer = MessageBoxW(nullptr,
+                                 L"The game's script update has been saved. Split-screen can start matches now.\n\n"
+                                 L"Split-screen runs only while Steam is in offline mode:\n"
+                                 L"1. Close the game.\n"
+                                 L"2. In Steam choose Steam > Go Offline.\n"
+                                 L"3. Start Black Ops II Zombies again.\n\n"
+                                 L"Close the game now?",
+                                 L"bo2split", flags | MB_YESNO | MB_ICONINFORMATION);
+        if (answer == IDYES) {
+            HWND game = nullptr;
+            EnumWindows(FindGameWindow, (LPARAM)&game);
+            if (game) PostMessageW(game, WM_CLOSE, 0, 0);
+        }
+        break;
+    }
+    case kNoticeSaveFailed:
+        MessageBoxW(nullptr,
+                    L"The game's script update could not be saved to the game folder "
+                    L"(zone\\all\\ffotd_tu17_zm_147.ff). Split-screen cannot start a match without it.\n\n"
+                    L"Check that the game folder can be written to, then start the game again while Steam is "
+                    L"online. Details are in bo2ss.log.",
+                    L"bo2split", flags | MB_OK | MB_ICONWARNING);
+        break;
+    case kNoticeMissing: {
+        int answer = MessageBoxW(nullptr,
+                                 L"Split-screen cannot start a match yet: the game's script update is missing.\n\n"
+                                 L"What this is: Black Ops II keeps a part of its Zombies scripts in a small file, the "
+                                 L"\"fix of the day\" (ffotd_tu17_zm_147.ff). The game downloads it at every start "
+                                 L"while Steam is online and never keeps it. In offline mode it is therefore missing, "
+                                 L"and without it a match stops at the start with a script error.\n\n"
+                                 L"There are two ways to get it, once:\n\n"
+                                 L"A. Let the game fetch it. Close the game, choose Steam > Go Online in Steam, start "
+                                 L"Black Ops II Zombies and wait for the message that the update has been saved. Then "
+                                 L"go offline again and start the game.\n\n"
+                                 L"B. Download the file, without starting the game online. The README has the link "
+                                 L"and says where the file goes.\n\n"
+                                 L"Open the README in the browser now?",
+                                 L"bo2split", flags | MB_YESNO | MB_ICONWARNING);
+        if (answer == IDYES)
+            ShellExecuteW(nullptr, L"open", L"https://github.com/pndevo/bo2split#the-script-update-needed-once",
+                          nullptr, nullptr, SW_SHOWNORMAL);
+        break;
+    }
+    }
+    InterlockedExchange(&g_noticeOpen, 0);
+    return 0;
+}
+
+static void ShowNotice(Notice notice) {
+    if (InterlockedExchange(&g_noticeOpen, 1)) return;
+    HANDLE thread = CreateThread(nullptr, 0, NoticeThread, (LPVOID)(uintptr_t)notice, 0, nullptr);
+    if (thread)
+        CloseHandle(thread);
+    else
+        InterlockedExchange(&g_noticeOpen, 0);
+}
+
+// While Steam is online the game fetches the fix-of-the-day zone at sign-in and keeps it in
+// memory only. Once the engine has loaded it, the buffer is written to
+// zone\all\ffotd_tu17_zm_147.ff, where LoadFfotdFromDisk finds it in offline mode. Nothing
+// in the game is changed for this. A file that already holds the same bytes is left alone.
+// Runs once, after the engine has set both the fetched and the zone-loaded flag.
+static void ScriptUpdateSave() {
+    const uint32_t size = Read32(engine::kFfotdSize);
+    if (size == 0 || size > ffotd::kBufferSize) {
+        Log("[bo2ss] script update: the game reports %u bytes, not saved", size);
+        return;
+    }
+    const uint8_t* buf = (const uint8_t*)engine::kFfotdBuffer;
+    wchar_t path[MAX_PATH];
+    ScriptUpdatePath(path);
+    bool present = false;
+    if (FILE* old = _wfsopen(path, L"rb", _SH_DENYNO)) {
+        present = true;
+        static uint8_t onDisk[ffotd::kBufferSize];
+        size_t n = fread(onDisk, 1, sizeof(onDisk), old);
+        fclose(old);
+        if (n >= size && memcmp(onDisk, buf, size) == 0) {
+            Log("[bo2ss] script update: the file on disk is current (%u bytes)", size);
+            return;
+        }
+    }
+    wchar_t tmp[MAX_PATH];
+    lstrcpynW(tmp, path, MAX_PATH - 4);
+    lstrcatW(tmp, L".tmp");
+    bool ok = false;
+    if (FILE* f = _wfsopen(tmp, L"wb", _SH_DENYWR)) {
+        ok = fwrite(buf, 1, size, f) == size;
+        ok = fclose(f) == 0 && ok;
+    }
+    ok = ok && MoveFileExW(tmp, path, MOVEFILE_REPLACE_EXISTING);
+    if (!ok) {
+        Log("[bo2ss] script update: writing %ls FAILED (error %lu)", path, GetLastError());
+        DeleteFileW(tmp);
+        if (!present) ShowNotice(kNoticeSaveFailed);
+        return;
+    }
+    Log("[bo2ss] script update: %u bytes saved to %ls%s", size, path, present ? " (replaced an older file)" : "");
+    if (!present) ShowNotice(kNoticeSaved);
+}
+
+// With nothing hooked, the game calls into this DLL only when it polls a pad, and it polls a
+// missing pad rarely. So a thread of its own waits for the engine to have loaded the zone;
+// it only reads the game's memory.
+static DWORD WINAPI ScriptUpdateWatchThread(LPVOID) {
+    while (!*(const volatile uint8_t*)engine::kFfotdFetched || !*(const volatile uint8_t*)engine::kFfotdZoneLoaded)
+        Sleep(250);
+    ScriptUpdateSave();
+    return 0;
+}
+
+void ScriptUpdateWatch() {
+    HANDLE thread = CreateThread(nullptr, 0, ScriptUpdateWatchThread, nullptr, 0, nullptr);
+    if (thread)
+        CloseHandle(thread);
+    else
+        Log("[bo2ss] script update: the watch thread could not be started (error %lu)", GetLastError());
+}
 
 static void LoadFfotdFromDisk() {
     wchar_t path[MAX_PATH];
-    lstrcpynW(path, g_gameDir, MAX_PATH);
-    lstrcatW(path, L"zone\\all\\ffotd_tu17_zm_147.ff");
+    ScriptUpdatePath(path);
     FILE* f = _wfsopen(path, L"rb", _SH_DENYNO);
     if (!f) {
         Log("[bo2ss] ffotd: %ls not found", path);
@@ -399,6 +549,14 @@ void __cdecl OfflineOnlineButton() {
     if (!known || online) {
         Log("[bo2ss] REFUSED: Steam client is %s. Put Steam into offline mode and restart the game.",
             known ? "ONLINE" : "in an unknown state (steam_api not ready)");
+        return;
+    }
+    // Without the script update the map scripts do not link and the match start ends in a
+    // script error, so the lobby stays closed and the player is told how to get the file.
+    if (ReadIniInt(L"load_ffotd", 1) && !ScriptUpdateOnDisk()) {
+        Log("[bo2ss] script update missing (zone\\all\\ffotd_tu17_zm_147.ff): the lobby stays closed. Start the "
+            "game once while Steam is online; the file is saved then.");
+        ShowNotice(kNoticeMissing);
         return;
     }
     int menu = ReadIniInt(L"offline_menu", 11);
