@@ -56,6 +56,22 @@ void ShadowServerCommands(int slot, uint8_t* cg) {
             pending[slot] = atoi(text + 2);
             pendingUntil[slot] = GetTickCount() + 3000;
         }
+        // "2 3 <id>": config string 3, the server id. "Restart level" (fast_restart) raises it
+        // by one, and from then on the server drops every message of a client that still
+        // sends the old id: the player takes no input and raises no weapon (its playerState
+        // on the server keeps the command time of the restart). The cgame takes the new id
+        // into the client struct of the connection that is player 1's (0x005592f0: config
+        // string 3 -> cl+0x2abc); a shadow player's own client struct gets it here.
+        if (text[0] == '2' && text[1] == ' ' && atoi(text + 2) == 3) {
+            const char* value = strchr(text + 2, ' ');
+            uint8_t* cl = ShadowSlotCl(slot);
+            if (value && cl) {
+                int id = atoi(value + 1);
+                Log("[srvcmd] player %d: server id %u -> %d", slot + 2, *(const uint32_t*)(cl + shadowcl::kClServerId),
+                    id);
+                *(uint32_t*)(cl + shadowcl::kClServerId) = (uint32_t)id;
+            }
+        }
     }
     last[slot] = seq;
     if (!pending[slot]) return;

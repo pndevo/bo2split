@@ -59,7 +59,8 @@ uint8_t*
 ExtraCl(int index); // cl of extra client index (0 = player 3) once it is in the game with a snapshot, else null
 uint8_t* ShadowSlotClc(
     int slot); // clientConnection of a shadow player (slot 0 = player 2, 1 / 2 = players 3 / 4), null while it is not in the game
-int ExtraWanted(); // players 3 and 4 that are to join this match (0..2), from the lobby or extra_players
+uint8_t* ShadowSlotCl(int slot); // the client struct of that shadow player, null while it is not in the game
+int ExtraWanted();               // players 3 and 4 that are to join this match (0..2), from the lobby or extra_players
 bool ExtraAngles(int index, float* pitch, float* yaw); // pad facing of extra client index (degrees)
 void ShadowSetViewKick(int slot, float pitch, float yaw);
 extern float g_viewKick[3][2];
