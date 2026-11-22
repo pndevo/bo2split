@@ -95,6 +95,8 @@ extern void* oGamepadUpdate;
 extern bool g_lobbyOpened;
 extern DWORD g_lobbyOpenedTick;
 bool SteamIsLoggedOn(bool* known);
+bool ScriptUpdateOnDisk(); // zone\all\ffotd_tu17_zm_147.ff exists
+void ScriptUpdateWatch();  // Steam online: writes the script update to that file once the game has fetched it
 void ExecCmd(const char* text);
 void AutoStartMatch();
 void __cdecl OfflineOnlineButton();
