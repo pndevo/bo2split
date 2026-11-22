@@ -379,9 +379,7 @@ static DWORD WINAPI NoticeThread(LPVOID param) {
                                  L"and says where the file goes.\n\n"
                                  L"Open the README in the browser now?",
                                  L"bo2split", flags | MB_YESNO | MB_ICONWARNING);
-        if (answer == IDYES)
-            ShellExecuteW(nullptr, L"open", L"https://github.com/pndevo/bo2split#the-script-update-needed-once",
-                          nullptr, nullptr, SW_SHOWNORMAL);
+        if (answer == IDYES) OpenInBrowser(L"https://github.com/pndevo/bo2split#the-script-update-needed-once");
         break;
     }
     }
