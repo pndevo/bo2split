@@ -6,6 +6,11 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+## v0.2.0
+
+- Start on any gamepad pauses the match for everyone. Player 1 gets the pause menu, every player 2 to 4 its controller options; Start again closes all menus and the match goes on. Before, Start of a player 2 to 4 opened only that player's options and the match went on.
+- Player 1's pause menu is drawn inside player 1's view, not across the views. `pause_menu_in_view=0` in `bo2ss.ini` brings the old place back.
+- Fixed: player 1's mouse cursor moved the highlight in the menus of the other players.
 - Branch rules: work goes to `develop` by a pull request from a branch named after the kind of change, `main` only takes `develop`; the workflow checks it.
 
 ## v0.1.2

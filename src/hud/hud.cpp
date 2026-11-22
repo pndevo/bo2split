@@ -88,6 +88,10 @@ void RootInitCall(uint8_t* root, float x, float y, float w, float h) {
 }
 } // namespace
 
+bool ShadowHudReady(int slot) {
+    return slot >= 0 && slot <= 2 && g_hud[slot].ready;
+}
+
 // LUI_BeginEvent 0x00930360(rootName, eventName, L).
 typedef char(__cdecl* LuiBeginEvent_t)(const char*, const char*, void*);
 static LuiBeginEvent_t oLuiBeginEvent;
@@ -130,6 +134,9 @@ static char __cdecl HookLuiBeginEvent(const char* root, const char* name, void* 
                 drop = true; // full root (menus): first pass only
         } else
             drop = true;
+        // The engine sends player 1's cursor to the root again in every pass ("mousemove"); in a
+        // shadow pass that would move the highlight in the menu of that pass's player.
+        if (name && strncmp(name, "mouse", 5) == 0) drop = true;
         if (g_hudTraceLeft > 0 && !(name && strcmp(name, "process_events") == 0)) {
             --g_hudTraceLeft;
             Log("[hud] pass %d event %s -> %s%s", (int)g_viewPass, name ? name : "?", root ? root : "?",
@@ -153,8 +160,10 @@ static const uint8_t kProLuiBeginEvent[] = {0x56, 0x8b, 0x74, 0x24,
 // profile: the menu is built in the tick after its open event and reads its values there.
 static void* oRootTick;
 static bool g_tickProfile;
+static bool g_shadowTick, g_shadowEvent; // the Lua side runs for the root of a shadow player
 static uint8_t* __cdecl PickTickRoot(uint8_t* root) {
     if (g_cgSwapped && root == (uint8_t*)engine::kLuiRoot0 && OwnHudActive() && ReadIniInt(L"p2_hud_tick", 1)) {
+        g_shadowTick = true;
         g_tickProfile = ShadowMenuTickBegin(HudCur());
         return g_hud[HudCur()].root;
     }
@@ -163,6 +172,7 @@ static uint8_t* __cdecl PickTickRoot(uint8_t* root) {
 static void __cdecl AfterRootTick() {
     if (g_tickProfile) ShadowMenuTickEnd();
     g_tickProfile = false;
+    g_shadowTick = false;
 }
 static __declspec(naked) void HookRootTick() {
     __asm {
@@ -215,9 +225,16 @@ static bool g_root1Drawn; // UIRoot1 was drawn in this frame's second pass
 // p_scoreboard_per_view=1: the scoreboard (menu 8) is not centred. It fits into one view, and at
 // the end of a match every player's root shows one: a centred copy of player 1's would lie
 // across the other players' own.
+// The pause menu (menu 3) is not centred either: it is laid out for player 1's view as the
+// menus of the other players are for theirs, and is drawn there, scaled where the view is too
+// narrow (RootScale).
+static bool PauseMenuInView() {
+    return g_p2.started && *(const int*)engine::kActiveMenu == 3 && ReadIniInt(L"pause_menu_in_view", 1) != 0;
+}
 static bool MenuUp() {
     int menu = *(const int*)engine::kActiveMenu;
     if (menu == 8 && ReadIniInt(L"p_scoreboard_per_view", 1)) return false;
+    if (PauseMenuInView()) return false;
     return g_p2.started && menu != 0 && ReadIniInt(L"p2_menu_center", 1) != 0;
 }
 static bool MenuCentered() {
@@ -230,6 +247,7 @@ static bool MenuCentered() {
 // a cursor at screen x arrives at root x / 2. While the root is drawn centred (above), the
 // pixel under the cursor is root x - W / 4: the coordinates are converted so that the engine's
 // formula gives that.
+static float RootScale(int pass);
 typedef void(__cdecl* LuiMouseMove_t)(int, int, int);
 static LuiMouseMove_t oLuiMouseMove;
 static void __cdecl HookLuiMouseMove(int lc, int x, int y) {
@@ -238,6 +256,18 @@ static void __cdecl HookLuiMouseMove(int lc, int x, int y) {
         ShadowViewFractions(0, fr); // player 1's root is as large as its view
         if (fr[2] < 1.0f) x = 2 * x - *(const int*)engine::kVidWidth / 2;
         if (fr[3] < 1.0f) y = 2 * y - *(const int*)engine::kVidHeight / 2;
+    } else if (PauseMenuInView() && OwnHudActive()) {
+        // The pause menu inside player 1's view, scaled around the view's middle: the root pixel
+        // under the cursor, as the screen coordinate that the engine's formula turns into it.
+        float fr[4];
+        ShadowViewFractions(0, fr);
+        float scale = RootScale(0);
+        float W = (float)*(const int*)engine::kVidWidth, H = (float)*(const int*)engine::kVidHeight;
+        if (fr[2] > 0.0f && fr[3] > 0.0f && scale > 0.0f) {
+            float w = fr[2] * W, h = fr[3] * H;
+            x = (int)((w * 0.5f + ((float)x - (fr[0] * W + w * 0.5f)) / scale) / fr[2]);
+            y = (int)((h * 0.5f + ((float)y - (fr[1] * H + h * 0.5f)) / scale) / fr[3]);
+        }
     }
     oLuiMouseMove(lc, x, y);
 }
@@ -258,7 +288,7 @@ extern const Detour kHudMouseHook = {"LUI mouse move (cursor for the centred men
 // own button, everyone at the end of a match).
 static float RootScale(int pass) {
     int slot = pass - 1;
-    bool menu = slot >= 0 && ShadowMenuOpen(slot);
+    bool menu = slot >= 0 ? ShadowMenuOpen(slot) : PauseMenuInView();
     const uint8_t* cg = *(const uint8_t* const*)engine::kCg;
     bool scores = (cg && *(const int*)(cg + 0x69568) != 0) || (slot >= 0 && ShadowScoresOpen(slot));
     if (!menu && !scores) return 1.0f;
@@ -497,8 +527,9 @@ bool ShadowHudEvent(int player, const char* name, int controller, const char* co
     if (!L || player < 0 || player > 3) return false;
     if (player > 0 && !g_hud[player - 1].ready) return false;
     const char* root = player == 0 ? (const char*)engine::kLuiRoot0Name : (const char*)(g_hud[player - 1].root + 0x8c);
-    bool busy = g_hudBusy;
+    bool busy = g_hudBusy, event = g_shadowEvent;
     g_hudBusy = true;
+    if (player > 0) g_shadowEvent = true;
     bool sent = false;
     if (oLuiBeginEvent(root, name, L)) {
         oLuiSetNumber("controller", controller, L);
@@ -518,7 +549,13 @@ bool ShadowHudEvent(int player, const char* name, int controller, const char* co
         sent = true;
     }
     g_hudBusy = busy;
+    g_shadowEvent = event;
     return sent;
+}
+// The tick or an event of a shadow player's root runs: what the Lua side does to "the
+// controller" there (controller 0 for every root) must not reach player 1.
+bool ShadowHudLuaRunning() {
+    return g_shadowTick || g_shadowEvent;
 }
 
 // p2_hud_score=1: the score lines of the HUD ("hud_update_competitive_scoreboard", sender

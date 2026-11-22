@@ -86,7 +86,9 @@ constexpr uintptr_t kKeyStates =
     0x010df614; // per key, stride 0x10: the first dword is nonzero once the engine saw the key go down
 constexpr uintptr_t kUiState =
     0x010e7e10; // UI state of local client 0 (stride 0x458): flags (bit 0 = active), +8 connection state, +0x10 migration
-constexpr uintptr_t kKeyCatchers = 0x010e7e14;      // key catchers
+constexpr uintptr_t kKeyCatchers = 0x010e7e14; // key catchers
+constexpr uintptr_t kClClock =
+    0x010e84b0; // int: the client's clock in ms, moves on every frame, also while the match is paused
 constexpr uintptr_t kLocalClientCount = 0x010e833c; // stored count after hunk allocation
 constexpr uintptr_t kClPtr = 0x010e8344;            // clients (0x8a3e0 per local client)
 constexpr uintptr_t kClcPtr = 0x010e8348;           // clientConnections (0x358a8)
