@@ -10,7 +10,7 @@
 ![Renderer](https://img.shields.io/badge/renderer-Direct3D%2011-informational)
 ![Licence](https://img.shields.io/badge/licence-MIT-green)
 
-[Install](#install) · [Start a match](#start-a-match) · [Controls](#controls) · [Settings](#settings) · [Known limits](#known-limits) · [How it works](#how-it-works) · [Changes](CHANGELOG.md)
+[Install](#install) · [Start a match](#start-a-match) · [Settings and controls](#settings-and-controls) · [Known limits](#known-limits) · [How it works](#how-it-works) · [Changes](CHANGELOG.md)
 
 ![Four players on one screen](img/four-players.jpg)
 
@@ -109,30 +109,21 @@ The mod hooks the engine at fixed addresses, so it is tied to this one build. An
 
 Requirements beyond those of the game itself have not been measured.
 
-## Controls
+## Settings and controls
 
-Player 1 plays through the game's own bindings. Players 2 to 4 use the layout of the console version on a gamepad:
+Everything works without touching a setting. To change one, start **`panel.bat`** in the game folder. It opens a settings window:
 
-| | |
-|---|---|
-| Sticks | Move and look; click left to sprint, click right for melee |
-| Triggers | Right fires, left aims down sights |
-| Bumpers | Right throws the lethal grenade, left the tactical one |
-| A / B / X / Y | Jump / crouch (hold: prone) / use and reload / next weapon |
-| D-pad | Action slots 1 to 4 |
-| Start | The player's own controller options, in the player's own view |
-| Back | Scoreboard in the player's own view, while held |
+![The settings window, tab "Players and pads"](img/settings-panel.png)
 
-The full tables, the keyboard and mouse layout and the controller options are in [docs/controls.md](docs/controls.md). The buttons can be reassigned with the `btn_*` settings.
+- The device of each player, chosen from a list or by pressing a button on it, the number of players and the split direction.
+- The action of each gamepad button of players 2 to 4.
+- Look and aim, screen layout, map and start.
 
-## Settings
+Most changes apply while the game runs. The window edits `bo2ss.ini` in the game folder; each setting there has a comment, and a setting that is left out has its default.
 
-Everything works without touching a setting. To change one:
+In a match, Start on the gamepad of a player 2 to 4 opens the game's own controller options in that player's view: look sensitivity, look inversion, stick layout and button layout, each player with values of its own. Player 1 uses the game's options as always.
 
-- **`panel.bat`** in the game folder opens a settings window: the device of each player (chosen from a list or by pressing a button on it), button layout, look and aim, screen layout, map and start. It edits `bo2ss.ini`, and most changes apply while the game runs.
-- **`bo2ss.ini`** in the game folder is the file itself. Each setting has a comment, and a setting that is left out has its default.
-
-Every setting is described in [docs/configuration.md](docs/configuration.md).
+The default layout of players 2 to 4 is the one of the console version. The tables, also for keyboard and mouse, are in [docs/controls.md](docs/controls.md); every setting is described in [docs/configuration.md](docs/configuration.md).
 
 ## Known limits
 
