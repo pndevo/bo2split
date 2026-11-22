@@ -46,6 +46,11 @@ uint8_t* ShadowSlotClc(int slot) {
     if (slot < 1 || slot > 2 || !ExtraCl(slot - 1)) return nullptr;
     return g_px[slot - 1].clc;
 }
+uint8_t* ShadowSlotCl(int slot) {
+    if (slot == 0) return g_p2.started ? g_p2.cl : nullptr;
+    if (slot < 1 || slot > 2) return nullptr;
+    return ExtraCl(slot - 1);
+}
 // Usercmd angle offsets of a shadow player (slot 0 = player 2, 1 / 2 = players 3 / 4): the kick
 // angles the cgame worked out in that player's pass (HookCgSubmitInputAndView). They are
 // absolute values for the frame, added to the facing in the usercmd and in the camera.

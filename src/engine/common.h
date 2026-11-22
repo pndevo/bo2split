@@ -13,6 +13,8 @@ constexpr uintptr_t kParty_CountMembers =
     0x005600c0; // int (party*): the members with a status above 2 and without flag bit 2
 constexpr uintptr_t kParty_IsActive = 0x00562380; // char (party*)
 constexpr uintptr_t kParty_IsHost = 0x005623a0;   // char (party*)
+constexpr uintptr_t kCbufAddText =
+    0x006bbe40; // void (int lc, const char* text): appends command text to the command buffer, run later in the frame
 constexpr uintptr_t kExecCommandText =
     0x006bd5f0; // void (int lc, int controller, const char* text): runs one console command text
 constexpr uintptr_t kGameModeSetMode = 0x006bed20;   // void (mode, value): 2 = local split-screen
@@ -62,6 +64,9 @@ __forceinline bool Party_IsActive(uintptr_t party) {
 }
 __forceinline bool Party_IsHost(uintptr_t party) {
     return ((char(__cdecl*)(uintptr_t))kParty_IsHost)(party) != 0;
+}
+__forceinline void Cbuf_AddText(int lc, const char* text) {
+    ((void(__cdecl*)(int, const char*))kCbufAddText)(lc, text);
 }
 __forceinline void ExecCommandText(int lc, int controller, const char* text) {
     ((void(__cdecl*)(int, int, const char*))kExecCommandText)(lc, controller, text);
