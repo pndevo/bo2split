@@ -6,6 +6,10 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+## v0.2.2
+
+- Fixed: with three or four players a second match in the same session ended with "UI Error" right after its start. The HUD of players 3 and 4 from the match before was drawn until those players had joined again; it is now dropped when the new match starts.
+- Fixed: after "Restart level" in the pause menu the players 2 to 4 stood still without a weapon and took no input. The server gives itself a new id at a restart and ignored these players from then on; they now take the new id as player 1 does.
 
 ## v0.2.1
 

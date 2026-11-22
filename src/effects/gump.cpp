@@ -25,8 +25,7 @@
 namespace {
 typedef const char*(__cdecl* Va_t)(const char* fmt, ...);
 typedef int(__cdecl* GetCmdLocalClient_t)();
-typedef void(__cdecl* CbufAddText_t)(int lc, const char* text);
-constexpr uintptr_t kVa = 0x0075e5c0, kGetCmdLocalClient = 0x006be410, kCbufAddText = 0x006bbe40;
+constexpr uintptr_t kVa = 0x0075e5c0, kGetCmdLocalClient = 0x006be410;
 constexpr int kClientScripts = 1; // script instance of the client scripts
 
 char g_slotName[4][64];
@@ -72,7 +71,7 @@ static void __cdecl HookScrLoadGump() {
     slot = GumpSlot(slot, name);
     engine::DvarSetString(*(void**)(engine::kGumpNameDvars + slot * 4), name);
     const char* text = ((Va_t)kVa)("loadGump %s %u %u\n", name, 0, slot);
-    ((CbufAddText_t)kCbufAddText)(((GetCmdLocalClient_t)kGetCmdLocalClient)(), text);
+    engine::Cbuf_AddText(((GetCmdLocalClient_t)kGetCmdLocalClient)(), text);
 }
 static void* oScrFlushGump;
 static void __cdecl HookScrFlushGump() {

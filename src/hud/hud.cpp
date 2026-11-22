@@ -1007,13 +1007,19 @@ void ShadowHudSecondPass(uint8_t* cg) {
     if (!g_cgSwapped || !cg || !ReadIniInt(L"p2_hud_own", 1)) return;
     int slot = HudCur();
     HudSlot& hs = g_hud[slot];
+    // A root of the match before belongs to a Lua state that is gone. Every such root is
+    // dropped here, before the check for the player's client: players 3 and 4 join seconds
+    // after the start, and until then their pass would draw the old root (Lua error "attempt
+    // to index a nil value", then the engine's UI error).
+    for (int i = 0; i < 3; ++i) {
+        if (g_hud[i].ready && g_hud[i].match != g_p2.startedTick) {
+            g_hud[i].ready = false;
+            Log("[hud] UIRoot%d dropped (new match)", i + 1);
+        }
+    }
     const uint8_t* cl = slot == 0 ? g_p2.cl : ExtraCl(slot - 1);
     if (!cl || (slot > 0 && !ReadIniInt(L"p_hud_extra", 1))) return;
     uint8_t* root1 = hs.root;
-    if (hs.ready && hs.match != g_p2.startedTick) {
-        hs.ready = false;
-        Log("[hud] UIRoot%d dropped (new match)", slot + 1);
-    }
     void* L = *(void**)engine::kLuiState;
     if (!hs.ready) {
         if (!*(const uint8_t*)engine::kLuiRoot0Active || !L) return;
