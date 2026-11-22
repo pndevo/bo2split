@@ -92,6 +92,19 @@ bool ShadowHudReady(int slot) {
     return slot >= 0 && slot <= 2 && g_hud[slot].ready;
 }
 
+// Has the HUD root of a shadow player get everything again: every score line, every client
+// field and every visibility bit, as after the root was created. A level restart resets the
+// HUD's score lines; the events for a shadow player's root are sent on a change only, so
+// without this a line stays away until that player's score changes.
+void ShadowHudResend(int slot) {
+    if (slot < 0 || slot > 2) return;
+    HudSlot& hs = g_hud[slot];
+    hs.fullRefreshDone = false;
+    memset(hs.scoreCache, 0, sizeof(hs.scoreCache));
+    hs.cfPsValid = false;
+    hs.visOld[0] = hs.visOld[1] = 0;
+}
+
 // LUI_BeginEvent 0x00930360(rootName, eventName, L).
 typedef char(__cdecl* LuiBeginEvent_t)(const char*, const char*, void*);
 static LuiBeginEvent_t oLuiBeginEvent;
