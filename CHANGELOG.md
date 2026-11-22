@@ -6,6 +6,9 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+
+## v0.2.1
+
 - The mod tells when a newer release is out: once per start of the game it asks GitHub for the newest release and shows a message, once per version, with an offer to open the release page. It downloads and installs nothing. `update_check=0` in `bo2ss.ini` switches the request off.
 
 ## v0.2.0
