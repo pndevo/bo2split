@@ -42,6 +42,12 @@ bool g_cgResetPending = true; // (re)build player 2's block from player 1's at t
 // entry of handle 0x700 is swapped with the block (p2_cg_swap_dobj=1).
 static short g_dobjSave;
 static bool g_dobjSwapped;
+// The script blur (engine::kScriptBlur) is kept per local client, and every pass runs as local
+// client 0: with one state the blur the server sets for player 1 (the lava) would lie on every
+// view. Each shadow player has a state of its own, swapped with its block; the server commands
+// that set it run on it in the player's pass (server_commands.cpp).
+static uint8_t g_blurSlot[kCgSlots][engine::kScriptBlurSize];
+static uint8_t g_blurSave[engine::kScriptBlurSize];
 void ShadowCgSwapIn(uint8_t* cg, int slot) {
     if (!ReadIniInt(L"p2_cg_swap", 1)) return;
     if (slot < 0 || slot >= kCgSlots) return;
@@ -110,7 +116,24 @@ void ShadowCgSwapIn(uint8_t* cg, int slot) {
             *(int*)(cg + engine::kCgClientInfo + p1 * engine::kClientInfoSize + 0x94) =
                 *(const int*)(g_cgSave + engine::kCgClientInfo + p1 * engine::kClientInfoSize + 0x94);
     }
+    // The vision sets (the colour grading of the view: the settings of the sets in use, their
+    // names and blend weights) are player 1's in every pass. The game's client scripts switch
+    // them, and those run for the one local client on player 1's block; a shadow player's
+    // block would keep the sets of the moment it was copied (the set of the match start as a
+    // layer that player 1 has long dropped: lifted blacks and a yellow cast in its view).
+    // The last stand set is the exception: the server starts it for the one player that is
+    // down (server_commands.cpp), so that slot stays the shadow player's own.
+    static uint8_t ownSlot[2][engine::kCgVisionSetSize];
+    const size_t lastStand = engine::kVisionSetSlotLastStand * engine::kCgVisionSetSize;
+    memcpy(ownSlot[0], cg + engine::kCgVisionSetCurrent + lastStand, engine::kCgVisionSetSize);
+    memcpy(ownSlot[1], cg + engine::kCgVisionSetFrom + lastStand, engine::kCgVisionSetSize);
+    memcpy(cg + engine::kCgVisionSets, g_cgSave + engine::kCgVisionSets, engine::kCgVisionSetsSize);
+    memcpy(cg + engine::kCgVisionSetCurrent + lastStand, ownSlot[0], engine::kCgVisionSetSize);
+    memcpy(cg + engine::kCgVisionSetFrom + lastStand, ownSlot[1], engine::kCgVisionSetSize);
     g_cgSwapped = true;
+    if (fresh) memset(g_blurSlot[slot], 0, sizeof(g_blurSlot[slot]));
+    memcpy(g_blurSave, (const void*)engine::kScriptBlur, sizeof(g_blurSave));
+    memcpy((void*)engine::kScriptBlur, g_blurSlot[slot], sizeof(g_blurSlot[slot]));
     ShadowRumbleSwapIn(slot, fresh);
     uint8_t* vm = *(uint8_t**)engine::kViewModel;
     if (vm && ReadIniInt(L"p2_cg_swap_vm", 1)) {
@@ -138,6 +161,8 @@ void P2CgSetWeaponSelect(int weapon) {
 void ShadowCgSwapOut(uint8_t* cg) {
     if (!g_cgSwapped) return;
     g_cgSwapped = false;
+    memcpy(g_blurSlot[g_cgCur], (const void*)engine::kScriptBlur, sizeof(g_blurSlot[g_cgCur]));
+    memcpy((void*)engine::kScriptBlur, g_blurSave, sizeof(g_blurSave));
     ShadowRumbleSwapOut();
     memcpy(g_curSlotCg, cg, engine::kCgSize);
     memcpy(cg, g_cgSave, engine::kCgSize);

@@ -42,11 +42,21 @@ constexpr int kCgFrametime = 0x48088;         // int, ms
 constexpr int kCgTime = 0x4808c;              // int, the cgame's server time
 constexpr uintptr_t kCgPredictedPs = 0x480a8; // the predicted playerState (kPlayerStateSize bytes)
 constexpr size_t kCgPredictedEnt = 0x4aab4;   // the predicted player entity (kCentSize bytes)
+constexpr int kCgPredictionError = 0x4ae68;   // vec3, the prediction error the view calc adds to the camera origin
 constexpr int kCgWeaponSelect = 0x69674;      // int, the selected weapon
 constexpr int kCgClientInfo = 0x69a60;        // array of 18 clientinfo entries
-constexpr int kCgOldPsDamageEvent = 0x80b80;  // int, the damage counter of the playerState before the prediction
-constexpr int kClientInfoSize = 0x808;        // bytes per clientinfo entry
-constexpr size_t kCentSize = 0x380;           // bytes per entity in the cgame entity array
+constexpr int kCgVisionSets = 0x7cb00;        // the vision sets in use: settings, names (+0xef8), blend weights
+constexpr size_t kCgVisionSetsSize = 0x3600;  // up to cg+0x80100
+// Vision set slots (8 slots of kCgVisionSetSize bytes each): the settings in use, the settings a
+// blend started from; slot 7 is the last stand set, its name is a string of 0x40 bytes.
+constexpr int kCgVisionSetCurrent = 0x7dbf8;
+constexpr int kCgVisionSetFrom = 0x7eaf8;
+constexpr size_t kCgVisionSetSize = 0x1e0;
+constexpr int kVisionSetSlotLastStand = 7;
+constexpr int kCgVisionSetLastStandName = 0x809f8;
+constexpr int kCgOldPsDamageEvent = 0x80b80; // int, the damage counter of the playerState before the prediction
+constexpr int kClientInfoSize = 0x808;       // bytes per clientinfo entry
+constexpr size_t kCentSize = 0x380;          // bytes per entity in the cgame entity array
 
 // --- Frontend and backend view data (pointers engine::kFrontendData / engine::kBackendData) ---
 constexpr int kViewIndex = 0x474208; // int, the view being built or drawn

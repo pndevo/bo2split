@@ -92,6 +92,11 @@ bool ShadowHudReady(int slot) {
     return slot >= 0 && slot <= 2 && g_hud[slot].ready;
 }
 
+// Drops the HUD root of a shadow player; the player's next pass creates it anew.
+void ShadowHudRebuild(int slot) {
+    if (slot >= 0 && slot <= 2) g_hud[slot].ready = false;
+}
+
 // Has the HUD root of a shadow player get everything again: every score line, every client
 // field and every visibility bit, as after the root was created. A level restart resets the
 // HUD's score lines; the events for a shadow player's root are sent on a change only, so
@@ -507,6 +512,7 @@ static bool LuiTable(const char* global, const char* table, unsigned long long* 
     return true;
 }
 bool LuiTableGet(const char* global, const char* table, const char* key, unsigned long long* value) {
+    engine::LuiLock lock;
     uint8_t* L = *(uint8_t**)engine::kLuiState;
     unsigned long long t;
     if (!LuiTable(global, table, &t)) return false;
@@ -518,6 +524,7 @@ bool LuiTableGet(const char* global, const char* table, const char* key, unsigne
     return true;
 }
 bool LuiTableSet(const char* global, const char* table, const char* key, unsigned long long value) {
+    engine::LuiLock lock;
     uint8_t* L = *(uint8_t**)engine::kLuiState;
     unsigned long long t;
     if (!LuiTable(global, table, &t)) return false;
@@ -879,6 +886,7 @@ static void LuiDumpRoots() {
     int v = ReadIniInt(L"p_hud_dump", 0);
     if (v == seen) return;
     seen = v;
+    engine::LuiLock lock;
     void* L = *(void**)engine::kLuiState;
     if (!L) return;
     for (int i = 0; i < 4; ++i) {
@@ -1044,6 +1052,10 @@ void ShadowHudSecondPass(uint8_t* cg) {
         ShadowViewRect(slot + 1, *(const int*)engine::kVidWidth, *(const int*)engine::kVidHeight, vr);
         float w = (float)vr[2], h = (float)vr[3];
         int controller = slot == 0 ? ReadIniInt(L"p2_hud_controller", 1) : slot + 1;
+        // The root init and the menu run Lua without taking the state's critical section.
+        // Without it here a garbage collector step on a worker thread runs at the same time
+        // (access violation in the Lua code on both threads).
+        engine::LuiLock lock;
         g_hudBusy = true;
         RootInitCall(root1, 0.0f, 0.0f, w, h);
         engine::LuiRootAddMenu((const char*)root1 + 0x8c, "HUD", controller, L);
@@ -1077,6 +1089,7 @@ void ShadowHudSecondPass(uint8_t* cg) {
         ShadowViewRect(slot + 1, *(const int*)engine::kVidWidth, *(const int*)engine::kVidHeight, vr);
         int w = vr[2], h = vr[3];
         if (w > 0 && h > 0 && (w != hs.w || h != hs.h)) {
+            engine::LuiLock lock;
             g_hudBusy = true;
             engine::LUI_ResizeRootStruct(root1, 0.0f, 0.0f, (float)w, (float)h);
             g_hudBusy = false;

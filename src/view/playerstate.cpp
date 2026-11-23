@@ -236,8 +236,15 @@ void ShadowSwapPs(uint8_t* cg) {
     // vision-set indices (swapping them restarts the vision lerp every pass: black
     // screen), +0x1a0 clientNum.
     if (ReadIniInt(L"p2_ps_keep_vision", 1)) memcpy(cg + engine::kCgPredictedPs + 0x15c, g_savedPs + 0x15c, 0x1c);
-    if (ReadIniInt(L"p2_ps_keep_clientnum", 1))
-        memcpy(cg + engine::kCgPredictedPs + engine::kPsClientNum, g_savedPs + engine::kPsClientNum, 4);
+    // The number kept is player 1's own (cg->clientNum of its block), not the one in its
+    // playerState: a dead player 1 watches another player, and its playerState then carries
+    // that player's number. With that number in a shadow pass the watched player would be the
+    // "local" one there: the view of a living player 3 or 4 showed its own body and no weapon.
+    if (ReadIniInt(L"p2_ps_keep_clientnum", 1)) {
+        const uint8_t* p1 = ShadowPlayer1Cg();
+        int own = p1 ? *(const int*)p1 : *(const int*)(g_savedPs + engine::kPsClientNum);
+        *(int*)(cg + engine::kCgPredictedPs + engine::kPsClientNum) = own;
+    }
     // p2_cam_native=1: let the cgame's own view calculation (bob, eye height, fov) work
     // from player 2's playerState; viewangles (+0x1f8 pitch, +0x1fc yaw, +0x200 roll) are
     // not sent by the server, so write pad angles + delta_angles there.

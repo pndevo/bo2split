@@ -101,9 +101,38 @@ static void __cdecl HookCgPredict(int lc) {
         savedGround = *groundEnt;
         *groundEnt = 0x3ff;
     }
+    // The other condition of that copy is a snapshot the block has not seen (snapshot server
+    // time against cg+0x4aab0). After the copy the command time is the snapshot's again and
+    // the replay runs player 1's commands on that playerState: while a dead player 1 watched
+    // somebody, its "next player" button fired the weapons in the views of the shadow players.
+    // The block reads as having seen the snapshot, so nothing is copied and nothing replayed.
+    if (noReplay) {
+        const uint8_t* snap = *(const uint8_t**)(cg + engine::kCgSnap);
+        if (snap) *(int*)(cg + 0x4aab0) = *(const int*)(snap + 8);
+    }
     oCgPredict(lc);
     if (savedGround != 0x3ff && *groundEnt == 0x3ff) *groundEnt = savedGround;
     if (noReplay) *(int*)(cg + engine::kCgPredictedPs) = savedCommandTime;
+    // While a dead player 1 watches another player, the prediction copies the snapshot's
+    // playerState (the watched player's) over the predicted one in every frame and replays
+    // player 1's commands on it. A shadow player that is not the watched one then stood at the
+    // watched player's place for the rest of the pass, and the difference to its own place was
+    // added up as a prediction error (cg+0x4ae68, a vector the view calc adds to the camera
+    // origin): its camera drifted hundreds of units away. The playerState is the shadow
+    // player's again right after the call, and a shadow pass has no prediction error.
+    if (g_inRenderViews && g_viewPass >= 1 && g_cgSwapped && g_psSwapped && cg) {
+        if (memcmp(cg + engine::kCgPredictedPs + engine::kPsOrigin, ShadowFramePs(cg) + engine::kPsOrigin, 12) != 0) {
+            static int count;
+            static DWORD nextLog;
+            ++count;
+            if (TraceOn() && (LONG)(GetTickCount() - nextLog) >= 0) {
+                nextLog = GetTickCount() + 1000;
+                Log("[view] pass %d: the prediction replaced the playerState (%d so far)", (int)g_viewPass, count);
+            }
+            ShadowSwapPs(cg);
+        }
+        memset(cg + engine::kCgPredictionError, 0, 12);
+    }
     // p_damage_feedback=1: the hit feedback of a shadow player (view kick, damage direction
     // indicator, red flash). Right after this call the cgame compares the damage counter of the
     // predicted playerState with the one it kept from before the prediction (0x004ea830: on a
