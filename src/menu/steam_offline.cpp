@@ -2,6 +2,7 @@
 #include "core/dev.h"
 #include "engine/common.h"
 #include "engine/ui.h"
+#include "shadow/shadow.h"
 
 #include <shellapi.h>
 #pragma comment(lib, "shell32.lib")
@@ -197,8 +198,15 @@ static void __cdecl HookExecCommand(int lc, int controller, int source, const ch
 // Not hooked: 0x009317a0 looks like an event start but is LUI_GetRootNameForController(controller),
 // one argument, 108 callers.
 
-// UpdateGamepadStatePad0 (0x0077c820) runs every frame on the main thread. Naked hook:
-// registers, flags and the original's arguments stay untouched.
+// UpdateGamepadStatePad0 (0x0077c820) runs on the main thread at the start of every view
+// pass (from the pad function 0x0077d200). Naked hook: registers and the original's arguments
+// stay untouched.
+// The pad function reads the pad, then turns the buttons that went down since the last read
+// into key events, whose commands run at once on the cgame block in place. In the pass of a
+// shadow player that block is the shadow player's: a weapon switch of player 1 would change
+// that player's weapon and not player 1's. While a shadow player's block is in place the pad
+// is not read here, and the pad function does nothing more (HookGpadIsActive, input.cpp), so
+// the press is seen in player 1's own pass of the next frame.
 void* oGamepadUpdate;
 static __declspec(naked) void HookGamepadUpdate() {
     __asm {
@@ -208,7 +216,11 @@ static __declspec(naked) void HookGamepadUpdate() {
         call OnFrame
         popfd
         popad
+        cmp byte ptr [g_cgSwapped], 0
+        jne skip
         jmp dword ptr [oGamepadUpdate]
+    skip:
+        ret
     }
 }
 static const uint8_t kProGamepadUpdate[] = {0xa1, 0x14, 0x85, 0xa8, 0x02};

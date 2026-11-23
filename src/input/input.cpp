@@ -250,9 +250,15 @@ const Detour kInputHooks[3] = {
 // update. While player 1 has no pad (p1_pad < 0) the engine's pad 0 is reported inactive,
 // so a pad of another player never moves player 1 as well.
 volatile int g_padReportedInactive = -1;
+constexpr uintptr_t kPadFunctionAfterIsActive = 0x0077d217; // return address of the pad function's GPad_IsActive call
 typedef char(__cdecl* GpadIsActive_t)(int);
 static GpadIsActive_t oGpadIsActive;
 static char __cdecl HookGpadIsActive(int pad) {
+    // The call from the pad function (0x0077d212) decides whether the sticks and the button
+    // events of player 1's pad are worked off. In the pass of a shadow player they are not:
+    // the commands of those events would run on that player's cgame block (see
+    // HookGamepadUpdate, steam_offline.cpp).
+    if (g_cgSwapped && _ReturnAddress() == (void*)kPadFunctionAfterIsActive) return 0;
     bool injected = DevPadInject(pad);
     char r = oGpadIsActive(pad);
     if (injected) return r;
