@@ -50,8 +50,8 @@ extern ShadowClient g_p2;
 
 // ---------------------------------------------------------------------------
 // shadow_client.cpp
-extern float g_p2Pitch, g_p2Yaw; // player 2 view angles (degrees)
-extern volatile bool g_p2AdsHeld;
+extern float g_p2Pitch, g_p2Yaw;         // player 2 view angles (degrees)
+extern volatile bool g_shadowAdsHeld[3]; // per view slot: the ADS action is held in the latest usercmd
 bool P2AllocateClient();
 void P2StartConnect();
 void ShadowStop(const char* why);

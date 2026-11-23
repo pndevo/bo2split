@@ -112,19 +112,29 @@ const uint8_t* ShadowFramePs(const uint8_t* cg) {
     // p2_interp_ads=2: local prediction on top. The interpolated value starts one server
     // round trip plus one snapshot interval after the trigger (the zoom comes about half a second
     // late); player 1 has no such delay because the engine predicts its playerState. Here the
-    // fraction moves from the moment LT changes (g_p2AdsHeld, the usercmd button) at the rate
+    // fraction moves from the moment LT changes (g_shadowAdsHeld, the usercmd button) at the rate
     // the snapshots of this weapon showed (largest step per millisecond seen, 1/200 per ms
     // until one was seen, reset on a weapon change); the result is the value further along of
     // the local and the interpolated one. When the server still disagrees 300 ms after the
     // change (sprint, reload: it refuses to aim), the local value follows the server.
-    if (adsMode >= 2 &&
-        slot == 0) { // the local prediction follows player 2's LT; the extra players get the interpolated value
-        static float local, rateUp = 1.0f / 200.0f, rateDown = 1.0f / 200.0f;
-        static bool wasHeld;
-        static int weapon;
-        static double lastMs, changeMs;
-        static int lastSnapTime;
-        static float lastSnapFrac;
+    if (adsMode >= 2) {
+        // One state per view slot: each shadow player has its own LT and weapon.
+        struct AdsLocal {
+            float local, rateUp = 1.0f / 200.0f, rateDown = 1.0f / 200.0f;
+            bool wasHeld;
+            int weapon;
+            double lastMs, changeMs;
+            int lastSnapTime;
+            float lastSnapFrac;
+        };
+        static AdsLocal g_ads[3];
+        AdsLocal& al = g_ads[slot];
+        float &local = al.local, &rateUp = al.rateUp, &rateDown = al.rateDown;
+        bool& wasHeld = al.wasHeld;
+        int& weapon = al.weapon;
+        double &lastMs = al.lastMs, &changeMs = al.changeMs;
+        int& lastSnapTime = al.lastSnapTime;
+        float& lastSnapFrac = al.lastSnapFrac;
         static LARGE_INTEGER freq;
         LARGE_INTEGER q;
         QueryPerformanceCounter(&q);
@@ -150,7 +160,7 @@ const uint8_t* ShadowFramePs(const uint8_t* cg) {
             lastSnapTime = newest->time;
             lastSnapFrac = newest->adsFrac;
         }
-        bool held = g_p2AdsHeld;
+        bool held = g_shadowAdsHeld[slot];
         if (held != wasHeld) {
             wasHeld = held;
             changeMs = nowMs;
@@ -164,7 +174,7 @@ const uint8_t* ShadowFramePs(const uint8_t* cg) {
         if (late && !held && server >= 1.0f) local = 1.0f; // the server keeps aiming
         // A dual wield weapon cannot aim: its left weapon fires with LT. A local value would
         // still rise with every press (the 300 ms above start again with each one), so fast
-        // left fire would hold the fraction near 1.0 in player 2's view: CG_KickAngles then
+        // left fire would hold the fraction near 1.0 in the player's view: CG_KickAngles then
         // uses the weapon's aiming values to bring the camera back, a dual wield weapon has
         // none, and the kick of every left shot would stay and pile up to the 10 degree limit
         // (a fat recoil of the left weapon only). No local value for such a weapon; the
@@ -186,8 +196,8 @@ const uint8_t* ShadowFramePs(const uint8_t* cg) {
     }
     if (logLeft > 0) {
         --logLeft;
-        Log("[p2] interp: time %d snaps %d..%d f %.2f org %.1f %.1f %.1f (raw %.1f %.1f %.1f) ads %.3f (raw %.3f)", now,
-            a->time, b->time, f, o[0], o[1], o[2], st.ring[st.head].org[0], st.ring[st.head].org[1],
+        Log("[p%d] interp: time %d snaps %d..%d f %.2f org %.1f %.1f %.1f (raw %.1f %.1f %.1f) ads %.3f (raw %.3f)",
+            slot + 2, now, a->time, b->time, f, o[0], o[1], o[2], st.ring[st.head].org[0], st.ring[st.head].org[1],
             st.ring[st.head].org[2], *ads, st.ring[st.head].adsFrac);
     }
     return st.ps;
