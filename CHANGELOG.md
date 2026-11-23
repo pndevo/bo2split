@@ -6,6 +6,9 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+- Fixed: the blur the game puts on a player's view (standing in the lava) lay on the views of all players when player 1 was the one hurt, and a player 2 to 4 never got its own. Every player now has its own. Health and damage were never shared. ([#19](https://github.com/pndevo/bo2split/issues/19))
+- Fixed: the colours of the views of players 2 to 4 were off (washed-out dark tones, a yellow cast). They kept the colour settings of the start of the match; they now follow player 1's.
+
 ## v0.2.3
 
 - Fixed: after "Restart level" the HUD of players 2 to 4 could miss the score line of another player until that player's score changed. The score lines are sent to them again after a restart.

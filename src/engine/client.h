@@ -74,14 +74,24 @@ constexpr uintptr_t kAimState = 0x00f86420;                    // aim state of l
 constexpr size_t kAimStateSize = 0x12d0;                       // bytes of aim state per local client
 constexpr size_t kAimStateFovTurnScale =
     0xcc; // float: tanHalfFovY of the view * 2.0929, the turn rate's field of view factor
-constexpr uintptr_t kOverheadNameList = 0x00fbc7f8;  // overhead name list: 16 bytes per entry, the entity number first
-constexpr uintptr_t kOverheadNameCount = 0x00fbd2f0; // overhead name list: count
-constexpr uintptr_t kViewModel = 0x00fc83e8;         // pointer to the viewmodel block (0xc0 bytes)
-constexpr uintptr_t kVmTraceDvar = 0x00fc8404;       // dvar* read by the viewmodel trace (float value at +0x18)
-constexpr uintptr_t kCgs = 0x0105f738;               // pointer to cgs
-constexpr uintptr_t kCg = 0x0105f75c;                // pointer to player 1's cgame block
-constexpr uintptr_t kCgEntities = 0x01060e48;        // pointer to the cgame entity array (0x380 per entity)
-constexpr uintptr_t kRumbleState = 0x01064690;       // rumble state of local client 0 (0x5250 bytes per local client)
+// The blur a script puts on a player's view (GSC setblur), one state per local client outside
+// the cgame block. The view setup reads its current value into cg+0x4dae8 in every pass
+// (0x004b03a0), the frame of a pass advances it (0x004b0500).
+constexpr uintptr_t kScriptBlur = 0x00fbc668; // state of local client 0
+constexpr size_t kScriptBlurSize = 0x1c;      // bytes per local client
+constexpr uintptr_t kCG_ScriptBlurFade =
+    0x004b03c0; // void (lc, ms, float value): that blur now, fading out over the time
+constexpr uintptr_t kCG_ScriptBlurSet =
+    0x004b0330; // void (lc, ms, float value, int time type, int priority): blur towards the value over the time
+constexpr uintptr_t kCG_ScriptBlurReset = 0x004b0420; // void (lc): no blur
+constexpr uintptr_t kOverheadNameList = 0x00fbc7f8;   // overhead name list: 16 bytes per entry, the entity number first
+constexpr uintptr_t kOverheadNameCount = 0x00fbd2f0;  // overhead name list: count
+constexpr uintptr_t kViewModel = 0x00fc83e8;          // pointer to the viewmodel block (0xc0 bytes)
+constexpr uintptr_t kVmTraceDvar = 0x00fc8404;        // dvar* read by the viewmodel trace (float value at +0x18)
+constexpr uintptr_t kCgs = 0x0105f738;                // pointer to cgs
+constexpr uintptr_t kCg = 0x0105f75c;                 // pointer to player 1's cgame block
+constexpr uintptr_t kCgEntities = 0x01060e48;         // pointer to the cgame entity array (0x380 per entity)
+constexpr uintptr_t kRumbleState = 0x01064690;        // rumble state of local client 0 (0x5250 bytes per local client)
 constexpr uintptr_t kKeyStates =
     0x010df614; // per key, stride 0x10: the first dword is nonzero once the engine saw the key go down
 constexpr uintptr_t kUiState =

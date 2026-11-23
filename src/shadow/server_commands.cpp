@@ -56,6 +56,26 @@ void ShadowServerCommands(int slot, uint8_t* cg) {
             pending[slot] = atoi(text + 2);
             pendingUntil[slot] = GetTickCount() + 3000;
         }
+        // "d <ms> <value>" and "( <ms> <value> <time type> <priority>": the blur a script puts
+        // on the player's view (the lava sends "d 800 3"). The cgame runs them as 0x005107f0
+        // and 0x005106e0 on the blur state of the local client; here that state is the shadow
+        // player's own (cgame_swap.cpp).
+        if (text[0] == 'd' && text[1] == ' ') {
+            int ms = 0;
+            float value = 0.0f;
+            if (sscanf_s(text + 2, "%d %f", &ms, &value) == 2)
+                ((void(__cdecl*)(int, int, float))engine::kCG_ScriptBlurFade)(0, ms, value);
+        }
+        if (text[0] == '(' && text[1] == ' ') {
+            int ms = 0, timeType = 0, priority = 0;
+            float value = 0.0f;
+            sscanf_s(text + 2, "%d %f %d %d", &ms, &value, &timeType, &priority);
+            if (ms == 0 && value <= 0.0f && timeType == 0 && priority == 0)
+                ((void(__cdecl*)(int))engine::kCG_ScriptBlurReset)(0);
+            else
+                ((void(__cdecl*)(int, int, float, int, int))engine::kCG_ScriptBlurSet)(0, ms, value, timeType,
+                                                                                       priority);
+        }
         // "2 3 <id>": config string 3, the server id. "Restart level" (fast_restart) raises it
         // by one, and from then on the server drops every message of a client that still
         // sends the old id: the player takes no input and raises no weapon (its playerState
