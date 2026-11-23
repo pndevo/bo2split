@@ -42,6 +42,7 @@ constexpr int kCgFrametime = 0x48088;         // int, ms
 constexpr int kCgTime = 0x4808c;              // int, the cgame's server time
 constexpr uintptr_t kCgPredictedPs = 0x480a8; // the predicted playerState (kPlayerStateSize bytes)
 constexpr size_t kCgPredictedEnt = 0x4aab4;   // the predicted player entity (kCentSize bytes)
+constexpr int kCgPredictionError = 0x4ae68;   // vec3, the prediction error the view calc adds to the camera origin
 constexpr int kCgWeaponSelect = 0x69674;      // int, the selected weapon
 constexpr int kCgClientInfo = 0x69a60;        // array of 18 clientinfo entries
 constexpr int kCgVisionSets = 0x7cb00;        // the vision sets in use: settings, names (+0xef8), blend weights

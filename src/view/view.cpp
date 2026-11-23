@@ -349,6 +349,43 @@ static void P2SnapDiff() {
     Log("[snap] shared %d, differing %d; offsets:%s", shared, differing, line);
 }
 
+// A dead player 1 watches another player: the playerState in its snapshot is then a copy of
+// the watched player's (clientNum that player's, otherFlags with kPofFollow). The cgame block
+// of a shadow player uses player 1's snapshot, so in its pass the watched player would count
+// as the one this view belongs to: a living shadow player that is not the watched one saw
+// its own body and no weapon. For the time of a shadow pass the two fields say what they say
+// while player 1 lives: player 1's own number, no following.
+static struct {
+    uint8_t* at;
+    int num, flags;
+} g_snapFollow[2];
+static void SnapFollowHide(uint8_t* cg) {
+    const uint8_t* p1 = ShadowPlayer1Cg();
+    if (!p1 || g_snapFollow[0].at || g_snapFollow[1].at) return;
+    // The cgame keeps two snapshots: cg+0x24 and the current one.
+    uint8_t* snaps[2] = {*(uint8_t**)(cg + engine::kCgSnap), *(uint8_t**)(cg + 0x24)};
+    if (snaps[1] == snaps[0]) snaps[1] = nullptr;
+    for (int i = 0; i < 2; ++i) {
+        uint8_t* snap = snaps[i];
+        if (!snap) continue;
+        int* flags = (int*)(snap + 0x10 + engine::kPsOtherFlags);
+        if (!(*flags & engine::kPofFollow)) continue;
+        int* num = (int*)(snap + 0x10 + engine::kPsClientNum);
+        g_snapFollow[i].at = snap;
+        g_snapFollow[i].num = *num;
+        g_snapFollow[i].flags = *flags;
+        *num = *(const int*)p1;
+        *flags = 4;
+    }
+}
+static void SnapFollowRestore() {
+    for (auto& s : g_snapFollow) {
+        if (!s.at) continue;
+        *(int*)(s.at + 0x10 + engine::kPsClientNum) = s.num;
+        *(int*)(s.at + 0x10 + engine::kPsOtherFlags) = s.flags;
+        s.at = nullptr;
+    }
+}
 static void __cdecl OnDrawPassBegin() {
     if (!g_inRenderViews) return;
     if (g_viewPass == 0) ++g_renderFrames;
@@ -471,6 +508,7 @@ static void __cdecl OnDrawPassBegin() {
                 g_savedCgClientNum = *(int*)cg;
                 *(int*)cg = *(const int*)(ShadowViewCl() + engine::kClPlayerState + engine::kPsClientNum);
             }
+            SnapFollowHide(cg);
             static int logged;
             if (g_viewPass == 1 && logged < 3) {
                 ++logged;
@@ -510,6 +548,7 @@ static void __cdecl OnDrawPassEnd() {
     if (g_viewPass >= 1 && g_psSwapped) {
         uint8_t* cg = *(uint8_t**)engine::kCg;
         ShadowRestoreSnapPs();
+        SnapFollowRestore();
         if (cg) memcpy(cg + engine::kCgPredictedPs, g_savedPs, engine::kPlayerStateSize);
         if (cg && g_savedCgClientNum >= 0) {
             *(int*)cg = g_savedCgClientNum;
