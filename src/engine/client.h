@@ -84,14 +84,19 @@ constexpr uintptr_t kCG_ScriptBlurFade =
 constexpr uintptr_t kCG_ScriptBlurSet =
     0x004b0330; // void (lc, ms, float value, int time type, int priority): blur towards the value over the time
 constexpr uintptr_t kCG_ScriptBlurReset = 0x004b0420; // void (lc): no blur
-constexpr uintptr_t kOverheadNameList = 0x00fbc7f8;   // overhead name list: 16 bytes per entry, the entity number first
-constexpr uintptr_t kOverheadNameCount = 0x00fbd2f0;  // overhead name list: count
-constexpr uintptr_t kViewModel = 0x00fc83e8;          // pointer to the viewmodel block (0xc0 bytes)
-constexpr uintptr_t kVmTraceDvar = 0x00fc8404;        // dvar* read by the viewmodel trace (float value at +0x18)
-constexpr uintptr_t kCgs = 0x0105f738;                // pointer to cgs
-constexpr uintptr_t kCg = 0x0105f75c;                 // pointer to player 1's cgame block
-constexpr uintptr_t kCgEntities = 0x01060e48;         // pointer to the cgame entity array (0x380 per entity)
-constexpr uintptr_t kRumbleState = 0x01064690;        // rumble state of local client 0 (0x5250 bytes per local client)
+// bool (lc, slot, style, const char* name, int ms): blends the vision set slot to the named set
+// over the time. The cgame calls it with slot 7 and style 3 when config string 0xaf2 (the last
+// stand set: "<name> <ms>") changes (0x00526790).
+constexpr uintptr_t kCG_VisionSetStartLerpTo = 0x005264f0;
+constexpr int kCsVisionSetLastStand = 0xaf2;
+constexpr uintptr_t kOverheadNameList = 0x00fbc7f8;  // overhead name list: 16 bytes per entry, the entity number first
+constexpr uintptr_t kOverheadNameCount = 0x00fbd2f0; // overhead name list: count
+constexpr uintptr_t kViewModel = 0x00fc83e8;         // pointer to the viewmodel block (0xc0 bytes)
+constexpr uintptr_t kVmTraceDvar = 0x00fc8404;       // dvar* read by the viewmodel trace (float value at +0x18)
+constexpr uintptr_t kCgs = 0x0105f738;               // pointer to cgs
+constexpr uintptr_t kCg = 0x0105f75c;                // pointer to player 1's cgame block
+constexpr uintptr_t kCgEntities = 0x01060e48;        // pointer to the cgame entity array (0x380 per entity)
+constexpr uintptr_t kRumbleState = 0x01064690;       // rumble state of local client 0 (0x5250 bytes per local client)
 constexpr uintptr_t kKeyStates =
     0x010df614; // per key, stride 0x10: the first dword is nonzero once the engine saw the key go down
 constexpr uintptr_t kUiState =

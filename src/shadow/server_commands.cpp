@@ -76,6 +76,21 @@ void ShadowServerCommands(int slot, uint8_t* cg) {
                 ((void(__cdecl*)(int, int, float, int, int))engine::kCG_ScriptBlurSet)(0, ms, value, timeType,
                                                                                        priority);
         }
+        // "2 2802 <name> <ms>": config string 0xaf2, the vision set of a player that is down
+        // ("zombie_last_stand" 1000). The server sends it to that player alone; the cgame
+        // reads the string of player 1's connection (0x00526790), so a shadow player's set is
+        // started here on its own block, as that function does it.
+        if (text[0] == '2' && text[1] == ' ' && atoi(text + 2) == engine::kCsVisionSetLastStand) {
+            char name[0x40] = {};
+            int ms = 0;
+            const char* value = strchr(text + 2, ' ');
+            if (value && sscanf_s(value + 1, " \"%63[^\"]\" %d", name, (unsigned)sizeof(name), &ms) >= 1) {
+                char* own = (char*)cg + engine::kCgVisionSetLastStandName;
+                memcpy(own, name, sizeof(name));
+                ((char(__cdecl*)(int, int, int, const char*, int))engine::kCG_VisionSetStartLerpTo)(
+                    0, engine::kVisionSetSlotLastStand, 3, own, ms);
+            }
+        }
         // "2 3 <id>": config string 3, the server id. "Restart level" (fast_restart) raises it
         // by one, and from then on the server drops every message of a client that still
         // sends the old id: the player takes no input and raises no weapon (its playerState

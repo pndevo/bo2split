@@ -121,7 +121,15 @@ void ShadowCgSwapIn(uint8_t* cg, int slot) {
     // them, and those run for the one local client on player 1's block; a shadow player's
     // block would keep the sets of the moment it was copied (the set of the match start as a
     // layer that player 1 has long dropped: lifted blacks and a yellow cast in its view).
+    // The last stand set is the exception: the server starts it for the one player that is
+    // down (server_commands.cpp), so that slot stays the shadow player's own.
+    static uint8_t ownSlot[2][engine::kCgVisionSetSize];
+    const size_t lastStand = engine::kVisionSetSlotLastStand * engine::kCgVisionSetSize;
+    memcpy(ownSlot[0], cg + engine::kCgVisionSetCurrent + lastStand, engine::kCgVisionSetSize);
+    memcpy(ownSlot[1], cg + engine::kCgVisionSetFrom + lastStand, engine::kCgVisionSetSize);
     memcpy(cg + engine::kCgVisionSets, g_cgSave + engine::kCgVisionSets, engine::kCgVisionSetsSize);
+    memcpy(cg + engine::kCgVisionSetCurrent + lastStand, ownSlot[0], engine::kCgVisionSetSize);
+    memcpy(cg + engine::kCgVisionSetFrom + lastStand, ownSlot[1], engine::kCgVisionSetSize);
     g_cgSwapped = true;
     if (fresh) memset(g_blurSlot[slot], 0, sizeof(g_blurSlot[slot]));
     memcpy(g_blurSave, (const void*)engine::kScriptBlur, sizeof(g_blurSave));
