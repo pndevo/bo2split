@@ -172,6 +172,22 @@ static void ShadowApplyCamera(int* refdef) {
         pitchDeg += ps[0x98 / 4];
         yawDeg += ps[0x9c / 4];
     }
+    // The view calc may have turned the playerState's viewangles away from the facing written
+    // before it: a player that is down sways. The weapon follows those angles, so with only the
+    // pad facing forced here the hand moved and the camera stood still. A difference of less
+    // than 20 degrees is taken into the facing; a larger one is a viewangles overwrite.
+    if (native) {
+        const uint8_t* block = *(const uint8_t**)engine::kCg;
+        if (block) {
+            const float* va = (const float*)(block + engine::kCgPredictedPs + 0x1f8);
+            float dp = va[0] - pitchDeg, dy = va[1] - yawDeg;
+            dy -= 360.0f * floorf((dy + 180.0f) / 360.0f);
+            if (fabsf(dp) < 20.0f && fabsf(dy) < 20.0f) {
+                pitchDeg += dp;
+                yawDeg += dy;
+            }
+        }
+    }
     float yaw = yawDeg * 3.14159265f / 180.0f, pitch = pitchDeg * 3.14159265f / 180.0f;
     float cy = cosf(yaw), sy = sinf(yaw), cp = cosf(pitch), sp = sinf(pitch);
     // p2_cam_kick=1: what the cgame's view calc turned the camera by on top of the
@@ -269,6 +285,29 @@ typedef int(__cdecl* RenderScene_t)(int*);
 static RenderScene_t oRenderScene;
 static int __cdecl HookRenderScene(int* refdef) {
     if (g_inRenderViews && ReadIniInt(L"p2_view", 1)) ShadowApplyCamera(refdef);
+    // p_cam_far_log=N (diagnostic): N lines, each for a shadow pass whose camera is more than
+    // 100 units (in the plane) from the place of the pass's player. The camera of a pass belongs
+    // at its player's eyes; a line here means the pass ran on another player's state.
+    if (g_inRenderViews && g_viewPass >= 1 && g_psSwapped) {
+        static int left = -1, armed = -1;
+        {
+            int v = ReadIniInt(L"p_cam_far_log", 0);
+            if (v != armed) {
+                armed = v;
+                left = v;
+            }
+        }
+        if (left > 0) {
+            const float* org = (const float*)(refdef + 0xd);
+            const float* own = (const float*)(ShadowFramePs(*(const uint8_t**)engine::kCg) + engine::kPsOrigin);
+            float dx = org[0] - own[0], dy = org[1] - own[1];
+            if (dx * dx + dy * dy > 100.0f * 100.0f) {
+                --left;
+                Log("[scene] pass %d: CAMERA FAR from its player: camera %.0f %.0f %.0f, player %d at %.0f %.0f %.0f",
+                    g_viewPass, org[0], org[1], org[2], g_viewPass + 1, own[0], own[1], own[2]);
+            }
+        }
+    }
     // p2_scene_log=N (diagnostic): N lines about the scene the second pass hands to the
     // renderer: scene DObj count 0x0345b404 and scene model count 0x0348000c (the two lists
     // R_AddDObjToScene 0x004106f0 fills), camera origin against player 2's origin. A line is

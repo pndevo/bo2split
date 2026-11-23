@@ -3,7 +3,7 @@ title: Diagnostics
 kind: reference
 description: How to read bo2ss.log for a bug report, and the switches that are not in bo2ss.ini - the fix switches that turn single parts of the mod on and off, the experimental switches and the diagnostic switches that write extra lines to the log.
 status: active
-updated: 2026-11-22
+updated: 2026-11-23
 ---
 
 # Diagnostics
@@ -245,6 +245,7 @@ These write extra lines to `bo2ss.log` or change how the mod reads the file. All
 | `p2_snap_diff` | `0` | N reports of the entities in player 1's and player 2's snapshot of the same server time (`[snap]`). |
 | `p2_ps_diff` | `0` | Once per match, the values that differ between player 1's and player 2's state. |
 | `p2_scene_log` | `0` | N lines (`[scene]`) when the entity count of the second view jumps or its camera is far from player 2. |
+| `p_cam_far_log` | `0` | N lines (`[scene] ... CAMERA FAR`), each for a view of players 2 to 4 whose camera is more than 100 units from its player. |
 | `p2_light_log` | `0` | N lines (`[light]`): lighting patches per drawn buffer. |
 | `p2_vis_log` | `0` | N lines (`[vis]`): entities whose visibility changed from the previous frame of the same view. |
 | `p2_interp_log` | `0` | N frames of the snapshot interpolation of player 2. |

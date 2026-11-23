@@ -6,6 +6,8 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+- Fixed: a player 2, 3 or 4 that was down had a still camera while the hand with the weapon moved. The camera now sways as player 1's does.
+
 ## v0.3.0
 
 - Fixed: a rare crash while the HUD of player 2, 3 or 4 was set up, seen when player 4 joined in a later match of one session. The mod used the game's menu script state while the game's own clean-up of that state ran on another thread. The mod now takes the game's lock for it.
