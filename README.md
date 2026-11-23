@@ -129,11 +129,10 @@ The default layout of players 2 to 4 is the one of the console version. The tabl
 
 - The controller options of players 2 to 4 show one row that does nothing for them: "Enable gamepad" (skipped). With two views side by side the options are drawn at half size.
 - Players 2 to 4 pause the match with Start, but the entries of the pause menu (resume, restart, end game) are player 1's.
-- The menu of a player 2 to 4 has a darker background than player 1's.
 - The keyboard and mouse layout of players 2 to 4 is fixed, and the hint texts in their halves show player 1's key names.
-- Players 3 and 4 start to aim down sights a little later than player 2 does, because the aim is not predicted locally for them.
 - Stance changes of players 2 to 4 start a little later than player 1's.
 - In split-screen no shell casings fly from a player's own first-person weapon.
+- A dead player 2 to 4 that watches another player can see the wrong name in its "Spectating" bar, or no bar.
 - Whether a gamepad vibrates is up to the pad and its connection: the mod sends the motor values to every pad, and some pads ignore them over Bluetooth.
 - Switching the layout (three players, split direction) during a match leaves the HUD at the old place. Choose the layout before the match starts.
 - The hint line in the lobby is placed for a 16:9 screen; other aspect ratios are not tested.
