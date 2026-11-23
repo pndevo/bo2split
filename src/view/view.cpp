@@ -222,7 +222,10 @@ static void ShadowSetupViewport(int pass) {
         if (rootHalf && rootMatch != g_p2.startedTick) rootHalf = false;
         if (rootHalf && (rootW != cgs[2] || rootH != cgs[3]) && ReadIniInt(L"p2_lui_resize", 1)) rootHalf = false;
         if (!rootHalf && *(const uint8_t*)engine::kLuiRoot0Active) {
-            engine::LUI_SetRootSize(0);
+            {
+                engine::LuiLock lock; // the resize runs Lua without taking the state's critical section
+                engine::LUI_SetRootSize(0);
+            }
             rootHalf = true;
             rootMatch = g_p2.startedTick;
             rootW = cgs[2];
@@ -580,11 +583,15 @@ static void __cdecl HookGenSortedSurfs(int* vp, void* scene, int* refdef, void* 
     // p_view_stale=1: a shadow pass is view 1 (or higher) of its frontend buffer, and the view
     // slots below it still hold what last used them: the viewport of an earlier layout (one
     // view, two halves, the wide view of three players) while the players joined one by one.
-    // The buffer's LUI draw would then show up a second time in that old rect (player 2's score
-    // and ammo twice, the copy twice as wide: slot 0 holds 0 0 1920 540 from the three-player
-    // layout). The lower slots get the viewport of the pass's own view (2 = an empty one).
+    // The backend draws the buffer's 2D once per view slot, so it would show up a second time in
+    // that old rect (player 2's score and ammo twice, the copy twice as wide: slot 0 holds
+    // 0 0 1920 540 from the three-player layout). 2: the lower slots get an empty viewport at
+    // the place of the pass's own view. 1: they get the viewport of the pass's own view; the 2D
+    // of view n is then drawn n + 1 times on top of itself, which nobody sees on an opaque
+    // element, but a translucent full-screen one (a fade, the flash of a nuke, a menu's backdrop)
+    // is that many times as strong.
     if (g_inRenderViews && g_viewPass >= 1 && ReadIniInt(L"p2_view", 1)) {
-        int mode = ReadIniInt(L"p_view_stale", 1);
+        int mode = ReadIniInt(L"p_view_stale", 2);
         uint8_t* fe = *(uint8_t**)engine::kFrontendData;
         int idx = *(int*)(fe + engine::kViewIndex), cnt = *(int*)(fe + engine::kViewCount);
         static int logLeft = 8;

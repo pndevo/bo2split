@@ -142,6 +142,7 @@ void MouseFocusMine(bool on) {
     const char* held = on ? "currentMouseFocus" : "currentMouseFocusOfPlayer1";
     const char* other = on ? "currentMouseFocusOfPlayer1" : "currentMouseFocus";
     unsigned long long value = 0;
+    engine::LuiLock lock; // the value must stay referenced from the read to the write
     if (!LuiTableGet("_G", "LUI", held, &value)) {
         static bool logged;
         if (!logged) Log("[menu] the table LUI was not found, the mouse focus stays shared");
@@ -271,6 +272,7 @@ bool Press(int slot, const char* button) {
 // moments the table is the game's, so player 1's own options keep their Back.
 void BackClosesMenu(bool on) {
     unsigned long long back = 0, saved = 0, close = 0;
+    engine::LuiLock lock; // the values must stay referenced from the read to the write
     if (!LuiTableGet("CoD", "OptionsControls", "Back", &back) ||
         !LuiTableGet("CoD", "OptionsControls", "BackOfTheMenu", &saved) ||
         !LuiTableGet("CoD", "OptionsControls", "CloseMenu", &close))
