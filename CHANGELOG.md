@@ -6,8 +6,10 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+- Fixed: a rare crash while the HUD of player 2, 3 or 4 was set up, seen when player 4 joined in a later match of one session. The mod used the game's menu script state while the game's own clean-up of that state ran on another thread. The mod now takes the game's lock for it.
 - Fixed: the blur the game puts on a player's view (standing in the lava) lay on the views of all players when player 1 was the one hurt, and a player 2 to 4 never got its own. Every player now has its own. Health and damage were never shared. ([#19](https://github.com/pndevo/bo2split/issues/19))
 - Fixed: when player 1 played on a gamepad, a button press of player 1 could act on another player: now and then the weapon of player 2, 3 or 4 changed when player 1 switched weapons, and player 1's own switch was lost. The game reads player 1's gamepad once per view; the buttons are now worked off for player 1's own view only. ([#19](https://github.com/pndevo/bo2split/issues/19))
+- Fixed: a see-through effect over the whole view (a fade, the flash of a nuke) was stronger on the view of player 2 than on player 1's, stronger again for player 3 and for player 4. It was drawn once more for every player before them. It is now drawn once.
 - Fixed: the colours of the views of players 2 to 4 were off (washed-out dark tones, a yellow cast). They kept the colour settings of the start of the match; they now follow player 1's.
 
 ## v0.2.3

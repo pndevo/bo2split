@@ -27,6 +27,12 @@ constexpr uintptr_t kLUI_GetRootNameForController =
 constexpr uintptr_t kLUI_ResizeRootStruct = 0x00931800; // void (rootStruct, x, y, w, h)
 constexpr uintptr_t kLUI_SetRootSize =
     0x00931990; // void (int controller): lays the root out to the viewport of the cgs fractions
+constexpr uintptr_t kSys_EnterCriticalSection = 0x00761070; // void (int index): waits for the section
+constexpr uintptr_t kSys_LeaveCriticalSection = 0x007610b0; // void (int index)
+// The critical section of the LUI Lua state. The engine holds it around every use of the state;
+// a job on a worker thread (0x00934c80) takes it with a try and then runs a step of Lua's
+// garbage collector (0x009167f0(L, 5, 0)).
+constexpr int kCritSectLui = 0x28;
 constexpr uintptr_t kVidWidth = 0x010f0d14;       // screen width
 constexpr uintptr_t kVidHeight = 0x010f0d18;      // screen height
 constexpr uintptr_t kVidAspect = 0x010f0d34;      // aspect ratio (float)
@@ -59,6 +65,17 @@ __forceinline void ScrPlace_SetupViewport(void* place, int x, int y, int w, int 
 __forceinline int UI_SetActiveMenu(int lc, int menuId) {
     return ((int(__cdecl*)(int, int))kUI_SetActiveMenu)(lc, menuId);
 }
+// Holds the critical section of the LUI Lua state for a scope. Needed around the engine
+// functions that use the state without taking the section themselves: the root init
+// 0x00931090, LuiRootAddMenu, LUI_ResizeRootStruct and the raw table access (0x004f1820,
+// 0x008fc8d0, 0x0059e2d0). The engine's root creation 0x00935060 holds it the same way. The
+// section may be entered again by the thread that holds it, so LUI_BeginEvent inside is fine.
+struct LuiLock {
+    LuiLock() { ((void(__cdecl*)(int))kSys_EnterCriticalSection)(kCritSectLui); }
+    ~LuiLock() { ((void(__cdecl*)(int))kSys_LeaveCriticalSection)(kCritSectLui); }
+    LuiLock(const LuiLock&) = delete;
+    LuiLock& operator=(const LuiLock&) = delete;
+};
 __forceinline void LUI_EndEvent(void* L) {
     ((void(__cdecl*)(void*))kLUI_EndEvent)(L);
 }

@@ -207,6 +207,7 @@ void ShadowControlsPauseToggle();                     // asks for the toggle of 
 bool ShadowHudLuaRunning();                           // the tick or an event of a shadow player's root runs
 bool ShadowHudReady(int slot);                        // the player has a HUD root of its own
 void ShadowHudResend(int slot);                       // sends that root every score line and client field again
+void ShadowHudRebuild(int slot);                      // drops that root; the player's next pass creates it anew
 bool ShadowMenuButton(int slot, const char* button);  // a menu button, press and release
 void ShadowMenuFrame();
 bool ShadowMenuTickBegin(int slot); // the player's profile for the tick of its root; true = call ShadowMenuTickEnd

@@ -208,7 +208,7 @@ Each of these turns one part of the mod on or off. All are on (or at their worki
 | `p2_light_patch_early` | `1` | The render thread writes the entity lighting patches before it draws a buffer, so moving entities such as the bus keep their brightness in both halves. |
 | `p2_keep_light_handle` | `1` | Entity jobs keep an entity's light cache handle when the current view does not see it. Read at game start. |
 | `p2_gump` | `2` | TranZit: number of area file slots used as a cache. 0 is the engine's behaviour. |
-| `p_view_stale` | `1` | View slots below a view's own slot get that view's viewport, so the HUD is not drawn twice. |
+| `p_view_stale` | `2` | View slots below a view's own slot get an empty viewport, so the HUD is not drawn twice. `1` gives them the view's own viewport instead; a translucent full-screen element (a fade, a flash) is then drawn several times on the views of players 2 to 4. |
 | `p2_actor_cull` | `2` | Zombie culling: 0 engine, 1 no culling, 2 each view tests against its own camera. |
 | `p2_lod_origin` | `1` | The second view sets the level-of-detail origin to its own camera. |
 
