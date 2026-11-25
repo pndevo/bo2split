@@ -44,6 +44,7 @@ extern int g_savedCgClientNum;
 const uint8_t* ShadowFramePs(const uint8_t* cg);
 void ShadowSwapPs(uint8_t* cg);
 void ShadowRestoreSnapPs();
+void SnapFollowPrediction(bool during); // view.cpp: the snapshots of a watching shadow player around the prediction
 
 // entities.cpp
 void AddPlayer1Body(uint8_t* cg);

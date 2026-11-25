@@ -354,10 +354,14 @@ static void P2SnapDiff() {
 // of a shadow player uses player 1's snapshot, so in its pass the watched player would count
 // as the one this view belongs to: a living shadow player that is not the watched one saw
 // its own body and no weapon. For the time of a shadow pass the two fields say what they say
-// while player 1 lives: player 1's own number, no following.
+// while player 1 lives: player 1's own number, no following. A shadow player that is dead and
+// watches somebody itself gets its own two values instead (its playerState is a copy of the
+// player it watches), so the bar of its view names that player.
 static struct {
     uint8_t* at;
-    int num, flags;
+    int num, flags;       // what the snapshot said before the pass
+    int setNum, setFlags; // what it says during the pass
+    bool ownFollows;      // the pass's player watches somebody itself
 } g_snapFollow[2];
 static void SnapFollowHide(uint8_t* cg) {
     const uint8_t* p1 = ShadowPlayer1Cg();
@@ -365,17 +369,37 @@ static void SnapFollowHide(uint8_t* cg) {
     // The cgame keeps two snapshots: cg+0x24 and the current one.
     uint8_t* snaps[2] = {*(uint8_t**)(cg + engine::kCgSnap), *(uint8_t**)(cg + 0x24)};
     if (snaps[1] == snaps[0]) snaps[1] = nullptr;
+    const uint8_t* own = ShadowFramePs(cg);
+    bool ownFollows = own && (*(const int*)(own + engine::kPsOtherFlags) & engine::kPofFollow);
     for (int i = 0; i < 2; ++i) {
         uint8_t* snap = snaps[i];
         if (!snap) continue;
         int* flags = (int*)(snap + 0x10 + engine::kPsOtherFlags);
-        if (!(*flags & engine::kPofFollow)) continue;
+        if (!(*flags & engine::kPofFollow) && !ownFollows) continue;
         int* num = (int*)(snap + 0x10 + engine::kPsClientNum);
         g_snapFollow[i].at = snap;
         g_snapFollow[i].num = *num;
         g_snapFollow[i].flags = *flags;
-        *num = *(const int*)p1;
-        *flags = 4;
+        g_snapFollow[i].ownFollows = ownFollows;
+        g_snapFollow[i].setNum = ownFollows ? *(const int*)(own + engine::kPsClientNum) : *(const int*)p1;
+        g_snapFollow[i].setFlags = ownFollows ? *(const int*)(own + engine::kPsOtherFlags) : 4;
+        *num = g_snapFollow[i].setNum;
+        *flags = g_snapFollow[i].setFlags;
+    }
+}
+// The prediction (CG_PredictPlayerState 0x004edb70) copies the playerState of a snapshot that
+// says "following" over the predicted one in every frame and replays player 1's commands on
+// the copy. In the pass of a shadow player that watches player 1, a held fire button of player
+// 1 then fired a shot in every frame: a muzzle flash and a shell in each, in every view. For
+// the time of the prediction the snapshots of such a pass say what they say for a living
+// player (player 1's own number, no following); the bar and the weapon are drawn after it,
+// with the values of SnapFollowHide.
+void SnapFollowPrediction(bool during) {
+    const uint8_t* p1 = ShadowPlayer1Cg();
+    for (auto& s : g_snapFollow) {
+        if (!s.at || !s.ownFollows) continue;
+        *(int*)(s.at + 0x10 + engine::kPsClientNum) = during && p1 ? *(const int*)p1 : s.setNum;
+        *(int*)(s.at + 0x10 + engine::kPsOtherFlags) = during && p1 ? 4 : s.setFlags;
     }
 }
 static void SnapFollowRestore() {

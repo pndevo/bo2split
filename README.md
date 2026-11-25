@@ -132,7 +132,6 @@ The default layout of players 2 to 4 is the one of the console version. The tabl
 - The keyboard and mouse layout of players 2 to 4 is fixed, and the hint texts in their halves show player 1's key names.
 - Stance changes of players 2 to 4 start a little later than player 1's.
 - In split-screen no shell casings fly from a player's own first-person weapon.
-- A dead player 2 to 4 that watches another player can see the wrong name in its "Spectating" bar, or no bar.
 - Whether a gamepad vibrates is up to the pad and its connection: the mod sends the motor values to every pad, and some pads ignore them over Bluetooth.
 - Switching the layout (three players, split direction) during a match leaves the HUD at the old place. Choose the layout before the match starts.
 - The hint line in the lobby is placed for a 16:9 screen; other aspect ratios are not tested.

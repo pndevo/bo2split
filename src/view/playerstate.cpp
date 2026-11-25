@@ -253,6 +253,12 @@ void ShadowSwapPs(uint8_t* cg) {
     if (ReadIniInt(L"p2_ps_keep_clientnum", 1)) {
         const uint8_t* p1 = ShadowPlayer1Cg();
         int own = p1 ? *(const int*)p1 : *(const int*)(g_savedPs + engine::kPsClientNum);
+        // A dead shadow player that watches somebody keeps the watched player's number from its
+        // own playerState: the spectator bar's name (the Lua function GetSpectatingClientInfo,
+        // 0x0093fbb0) is read from the predicted playerState's clientNum (cg+0x48248).
+        const uint8_t* fps = ShadowFramePs(cg);
+        if (ReadIniInt(L"p_spectate_view", 1) && (*(const int*)(fps + engine::kPsOtherFlags) & engine::kPofFollow))
+            own = *(const int*)(fps + engine::kPsClientNum);
         *(int*)(cg + engine::kCgPredictedPs + engine::kPsClientNum) = own;
     }
     // p2_cam_native=1: let the cgame's own view calculation (bob, eye height, fov) work
