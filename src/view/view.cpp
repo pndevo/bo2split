@@ -354,7 +354,9 @@ static void P2SnapDiff() {
 // of a shadow player uses player 1's snapshot, so in its pass the watched player would count
 // as the one this view belongs to: a living shadow player that is not the watched one saw
 // its own body and no weapon. For the time of a shadow pass the two fields say what they say
-// while player 1 lives: player 1's own number, no following.
+// while player 1 lives: player 1's own number, no following. A shadow player that is dead and
+// watches somebody itself gets its own two values instead (its playerState is a copy of the
+// player it watches), so the bar of its view names that player.
 static struct {
     uint8_t* at;
     int num, flags;
@@ -365,17 +367,19 @@ static void SnapFollowHide(uint8_t* cg) {
     // The cgame keeps two snapshots: cg+0x24 and the current one.
     uint8_t* snaps[2] = {*(uint8_t**)(cg + engine::kCgSnap), *(uint8_t**)(cg + 0x24)};
     if (snaps[1] == snaps[0]) snaps[1] = nullptr;
+    const uint8_t* own = ShadowFramePs(cg);
+    bool ownFollows = own && (*(const int*)(own + engine::kPsOtherFlags) & engine::kPofFollow);
     for (int i = 0; i < 2; ++i) {
         uint8_t* snap = snaps[i];
         if (!snap) continue;
         int* flags = (int*)(snap + 0x10 + engine::kPsOtherFlags);
-        if (!(*flags & engine::kPofFollow)) continue;
+        if (!(*flags & engine::kPofFollow) && !ownFollows) continue;
         int* num = (int*)(snap + 0x10 + engine::kPsClientNum);
         g_snapFollow[i].at = snap;
         g_snapFollow[i].num = *num;
         g_snapFollow[i].flags = *flags;
-        *num = *(const int*)p1;
-        *flags = 4;
+        *num = ownFollows ? *(const int*)(own + engine::kPsClientNum) : *(const int*)p1;
+        *flags = ownFollows ? *(const int*)(own + engine::kPsOtherFlags) : 4;
     }
 }
 static void SnapFollowRestore() {
