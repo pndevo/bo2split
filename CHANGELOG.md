@@ -6,6 +6,8 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+## v0.3.1
+
 - Fixed: a player 2, 3 or 4 that was down had a still camera while the hand with the weapon moved. The camera now sways as player 1's does.
 - Fixed: players 3 and 4 started to aim down sights about a tenth of a second later than player 2. Their zoom now starts with the trigger, as player 2's does.
 - Fixed: the "Spectating" bar of a dead player 2, 3 or 4 named player 1 instead of the player it watched.
