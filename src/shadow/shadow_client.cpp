@@ -216,8 +216,8 @@ static inline int Angle2Short(float deg) {
     return (int)(deg * (65536.0f / 360.0f)) & 0xffff;
 }
 
-float g_p2Pitch, g_p2Yaw;  // player 2 view angles (degrees)
-volatile bool g_p2AdsHeld; // LT / ads button in the latest usercmd
+float g_p2Pitch, g_p2Yaw;         // player 2 view angles (degrees)
+volatile bool g_shadowAdsHeld[3]; // per view slot: LT / ads button in the latest usercmd
 // Per shadow player, from its last view pass: the field of view factor of the turn rate and
 // the aim-down-sights fraction (0 = hip, 1 = sights).
 float g_viewLook[3][2] = {{1.0f, 0.0f}, {1.0f, 0.0f}, {1.0f, 0.0f}};
@@ -404,8 +404,8 @@ static void P2FillUsercmdFromPad(uint8_t* cmd, float dtMs) {
     ShadowControlsButtons(0, st.buttons, st.lt, st.rt, st.kbmActs, &buttons, &buttons2);
     if (DevApplyInput(0, &ly, &lx)) { /* stick overridden */
     }
-    g_p2AdsHeld = (buttons & 0x00100280) !=
-                  0; // the ADS action's usercmd bits (kBitsAds); for the local zoom prediction (p2_interp_ads=2)
+    // The ADS action's usercmd bits (kBitsAds), for the local zoom prediction (p2_interp_ads=2).
+    g_shadowAdsHeld[0] = (buttons & 0x00100280) != 0;
     // Weapon cycle: rising edge of the pseudo bit -> CG_WeapNext_f on player 2's block in the
     // next second pass (HookCgPredict); the bit never reaches the usercmd.
     {
@@ -706,6 +706,7 @@ static void ExtraFillUsercmd(ExtraClient& x, uint8_t* cmd, float dtMs, int step)
     if (x.pitch < -85.0f) x.pitch = -85.0f;
     int buttons = 0, buttons2 = 0;
     ShadowControlsButtons(1 + x.index, in.buttons, in.lt, in.rt, in.kbmActs, &buttons, &buttons2);
+    g_shadowAdsHeld[1 + x.index] = (buttons & 0x00100280) != 0; // for the local zoom prediction (p2_interp_ads=2)
     DevApplyInput(1 + x.index, &ly, &lx);
     {
         bool down = (buttons2 & kWeapNextPseudoBit) != 0;

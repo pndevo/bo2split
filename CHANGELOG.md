@@ -6,6 +6,12 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+## v0.3.1
+
+- Fixed: a player 2, 3 or 4 that was down had a still camera while the hand with the weapon moved. The camera now sways as player 1's does.
+- Fixed: players 3 and 4 started to aim down sights about a tenth of a second later than player 2. Their zoom now starts with the trigger, as player 2's does.
+- Fixed: the "Spectating" bar of a dead player 2, 3 or 4 named player 1 instead of the player it watched.
+
 ## v0.3.0
 
 - Fixed: a rare crash while the HUD of player 2, 3 or 4 was set up, seen when player 4 joined in a later match of one session. The mod used the game's menu script state while the game's own clean-up of that state ran on another thread. The mod now takes the game's lock for it.

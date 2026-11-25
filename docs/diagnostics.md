@@ -3,7 +3,7 @@ title: Diagnostics
 kind: reference
 description: How to read bo2ss.log for a bug report, and the switches that are not in bo2ss.ini - the fix switches that turn single parts of the mod on and off, the experimental switches and the diagnostic switches that write extra lines to the log.
 status: active
-updated: 2026-11-22
+updated: 2026-11-23
 ---
 
 # Diagnostics
@@ -119,7 +119,7 @@ Each of these turns one part of the mod on or off. All are on (or at their worki
 | `p2_cg_swap_dobj` | `1` | The copy gives the second player a viewmodel object of its own. |
 | `p2_no_replay` | `1` | The extra view does not replay player 1's input on player 2's state. |
 | `p2_interp` | `1` | The origin of the second player is interpolated between its last two snapshots. |
-| `p2_interp_ads` | `2` | Interpolates the aim-down-sights fraction too. 2 also starts the zoom locally at once, 1 interpolates only. |
+| `p2_interp_ads` | `2` | Interpolates the aim-down-sights fraction too. 2 also starts the zoom locally at once for each of the players 2 to 4, 1 interpolates only. |
 | `p2_interp_viewheight` | `1` | The eye height of players 2 to 4 is interpolated, so a stance change moves the camera smoothly. |
 | `p2_interp_bob` | `1` | The weapon bob and the velocity of players 2 to 4 are interpolated. |
 | `p2_pred_ground` | `1` | The prediction of player 2 sees no ground entity, so standing on a moving entity (the bus) does not copy player 1's state over it. |
@@ -245,9 +245,10 @@ These write extra lines to `bo2ss.log` or change how the mod reads the file. All
 | `p2_snap_diff` | `0` | N reports of the entities in player 1's and player 2's snapshot of the same server time (`[snap]`). |
 | `p2_ps_diff` | `0` | Once per match, the values that differ between player 1's and player 2's state. |
 | `p2_scene_log` | `0` | N lines (`[scene]`) when the entity count of the second view jumps or its camera is far from player 2. |
+| `p_cam_far_log` | `0` | N lines (`[scene] ... CAMERA FAR`), each for a view of players 2 to 4 whose camera is more than 100 units from its player. |
 | `p2_light_log` | `0` | N lines (`[light]`): lighting patches per drawn buffer. |
 | `p2_vis_log` | `0` | N lines (`[vis]`): entities whose visibility changed from the previous frame of the same view. |
-| `p2_interp_log` | `0` | N frames of the snapshot interpolation of player 2. |
+| `p2_interp_log` | `0` | N lines of the snapshot interpolation of players 2 to 4 (`[p2] interp`, `[p3] interp`, `[p4] interp`). |
 | `p2_vm_log` | `0` | N viewmodel rebuilds with their inputs. |
 | `p2_vm_trace` | `0` | N lines (`[vm]`) about the viewmodel per view. |
 | `p2_body_trace` | `0` | Traces the drawing of player 1's body in the second view. |
