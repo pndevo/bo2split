@@ -359,7 +359,9 @@ static void P2SnapDiff() {
 // player it watches), so the bar of its view names that player.
 static struct {
     uint8_t* at;
-    int num, flags;
+    int num, flags;       // what the snapshot said before the pass
+    int setNum, setFlags; // what it says during the pass
+    bool ownFollows;      // the pass's player watches somebody itself
 } g_snapFollow[2];
 static void SnapFollowHide(uint8_t* cg) {
     const uint8_t* p1 = ShadowPlayer1Cg();
@@ -378,8 +380,26 @@ static void SnapFollowHide(uint8_t* cg) {
         g_snapFollow[i].at = snap;
         g_snapFollow[i].num = *num;
         g_snapFollow[i].flags = *flags;
-        *num = ownFollows ? *(const int*)(own + engine::kPsClientNum) : *(const int*)p1;
-        *flags = ownFollows ? *(const int*)(own + engine::kPsOtherFlags) : 4;
+        g_snapFollow[i].ownFollows = ownFollows;
+        g_snapFollow[i].setNum = ownFollows ? *(const int*)(own + engine::kPsClientNum) : *(const int*)p1;
+        g_snapFollow[i].setFlags = ownFollows ? *(const int*)(own + engine::kPsOtherFlags) : 4;
+        *num = g_snapFollow[i].setNum;
+        *flags = g_snapFollow[i].setFlags;
+    }
+}
+// The prediction (CG_PredictPlayerState 0x004edb70) copies the playerState of a snapshot that
+// says "following" over the predicted one in every frame and replays player 1's commands on
+// the copy. In the pass of a shadow player that watches player 1, a held fire button of player
+// 1 then fired a shot in every frame: a muzzle flash and a shell in each, in every view. For
+// the time of the prediction the snapshots of such a pass say what they say for a living
+// player (player 1's own number, no following); the bar and the weapon are drawn after it,
+// with the values of SnapFollowHide.
+void SnapFollowPrediction(bool during) {
+    const uint8_t* p1 = ShadowPlayer1Cg();
+    for (auto& s : g_snapFollow) {
+        if (!s.at || !s.ownFollows) continue;
+        *(int*)(s.at + 0x10 + engine::kPsClientNum) = during && p1 ? *(const int*)p1 : s.setNum;
+        *(int*)(s.at + 0x10 + engine::kPsOtherFlags) = during && p1 ? 4 : s.setFlags;
     }
 }
 static void SnapFollowRestore() {

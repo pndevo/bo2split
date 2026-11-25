@@ -110,7 +110,9 @@ static void __cdecl HookCgPredict(int lc) {
         const uint8_t* snap = *(const uint8_t**)(cg + engine::kCgSnap);
         if (snap) *(int*)(cg + 0x4aab0) = *(const int*)(snap + 8);
     }
+    if (noReplay) SnapFollowPrediction(true);
     oCgPredict(lc);
+    if (noReplay) SnapFollowPrediction(false);
     if (savedGround != 0x3ff && *groundEnt == 0x3ff) *groundEnt = savedGround;
     if (noReplay) *(int*)(cg + engine::kCgPredictedPs) = savedCommandTime;
     // While a dead player 1 watches another player, the prediction copies the snapshot's
