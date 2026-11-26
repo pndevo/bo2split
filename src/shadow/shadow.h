@@ -114,7 +114,7 @@ extern volatile bool g_viewWeapNext[3];
 extern volatile bool g_p2WeapPrevPending, g_viewWeapPrev[3];
 // One hook table per file of the view passes: view.cpp, playerstate.cpp, entities.cpp,
 // predict.cpp, scene.cpp.
-extern const Detour kViewHooks[12];
+extern const Detour kViewHooks[13];
 extern const Detour kViewPsHooks[2];
 extern const Detour kViewEntityHooks[8];
 extern const Detour kViewPredictHooks[5];

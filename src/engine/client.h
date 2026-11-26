@@ -19,10 +19,14 @@ constexpr uintptr_t kCG_AdvanceDObjAnimByFrametime =
 constexpr uintptr_t kCG_CalcEntityLerpPositions = 0x004bfc40; // void (int lc, cent)
 constexpr uintptr_t kCG_AddEntityByType = 0x004c0750;         // void (lc, cent, cg): the add by type
 constexpr uintptr_t kCG_SendHudInfoEvent = 0x0050fe30;        // void (int lc, int type)
-constexpr uintptr_t kCG_SelectWeapon = 0x005369a0;            // void (int lc, playerState*, int weapon)
-constexpr uintptr_t kCG_ActionSlotDown = 0x0053a3e0;          // void (int lc, int slot 0..3)
-constexpr uintptr_t kCG_WeapNext_f = 0x0053be10;              // CG_WeapNext_f
-constexpr uintptr_t kCG_WeapPrev_f = 0x0053be50;              // CG_WeapPrev_f
+constexpr uintptr_t kCG_UpdateShellshock =
+    0x00512d40; // void (int lc, entry, int start, int duration): sound, look scale, view kick and vision set of a
+                // shellshock, once per view pass
+constexpr uintptr_t kShellshockNoise = 0x00b23560;   // pairs of floats (pitch, yaw), 128 plus 3: the view kick's noise
+constexpr uintptr_t kCG_SelectWeapon = 0x005369a0;   // void (int lc, playerState*, int weapon)
+constexpr uintptr_t kCG_ActionSlotDown = 0x0053a3e0; // void (int lc, int slot 0..3)
+constexpr uintptr_t kCG_WeapNext_f = 0x0053be10;     // CG_WeapNext_f
+constexpr uintptr_t kCG_WeapPrev_f = 0x0053be50;     // CG_WeapPrev_f
 constexpr uintptr_t kCL_SendCmd =
     0x00541180; // void (int lc): the command packet send step, reads the ready-to-send check first
 constexpr uintptr_t kCL_CheckForResend = 0x00550c90; // void (int lc): getchallenge / connect

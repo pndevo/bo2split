@@ -33,20 +33,26 @@ constexpr size_t kPsViewHeightCurrent = 0x208; // float; +0x204 is the target he
 constexpr int kPsDamageEvent = 0x228;          // int, counts the hits taken; +4 yaw and +8 pitch of the last hit
                                                // (0 to 255 for 0 to 360 degrees, both 255 = no direction), +0xc amount
 constexpr int kPsDamageFieldsSize = 0x10;      // the four damage fields from kPsDamageEvent on
+constexpr int kPsShellshock = 0x58c;           // three ints: the shellshock's index (0 = none), its start in
+                                               // server time, its duration in ms
+constexpr int kPsShellshockSize = 0xc;
 
 // --- cgame block (cg, pointer engine::kCg) ---
 constexpr size_t kCgSize = 0x87700;
-constexpr int kCgNextSnap = 0x24;             // pointer, the next snapshot
-constexpr int kCgSnap = 0x28;                 // pointer, the current snapshot
-constexpr int kCgFrametime = 0x48088;         // int, ms
-constexpr int kCgTime = 0x4808c;              // int, the cgame's server time
-constexpr uintptr_t kCgPredictedPs = 0x480a8; // the predicted playerState (kPlayerStateSize bytes)
-constexpr size_t kCgPredictedEnt = 0x4aab4;   // the predicted player entity (kCentSize bytes)
-constexpr int kCgPredictionError = 0x4ae68;   // vec3, the prediction error the view calc adds to the camera origin
-constexpr int kCgWeaponSelect = 0x69674;      // int, the selected weapon
-constexpr int kCgClientInfo = 0x69a60;        // array of 18 clientinfo entries
-constexpr int kCgVisionSets = 0x7cb00;        // the vision sets in use: settings, names (+0xef8), blend weights
-constexpr size_t kCgVisionSetsSize = 0x3600;  // up to cg+0x80100
+constexpr int kCgNextSnap = 0x24;               // pointer, the next snapshot
+constexpr int kCgSnap = 0x28;                   // pointer, the current snapshot
+constexpr int kCgFrametime = 0x48088;           // int, ms
+constexpr int kCgTime = 0x4808c;                // int, the cgame's server time
+constexpr uintptr_t kCgPredictedPs = 0x480a8;   // the predicted playerState (kPlayerStateSize bytes)
+constexpr size_t kCgPredictedEnt = 0x4aab4;     // the predicted player entity (kCentSize bytes)
+constexpr int kCgPredictionError = 0x4ae68;     // vec3, the prediction error the view calc adds to the camera origin
+constexpr int kCgWeaponSelect = 0x69674;        // int, the selected weapon
+constexpr int kCgShellshockLookScale = 0x6989c; // float, 1 = no shellshock: the scale of the look sensitivity
+constexpr int kCgShellshockKick = 0x698a0;      // three floats: pitch and yaw the shellshock adds to the view, and
+                                                // one more the update sets to 0
+constexpr int kCgClientInfo = 0x69a60;          // array of 18 clientinfo entries
+constexpr int kCgVisionSets = 0x7cb00;          // the vision sets in use: settings, names (+0xef8), blend weights
+constexpr size_t kCgVisionSetsSize = 0x3600;    // up to cg+0x80100
 // Vision set slots (8 slots of kCgVisionSetSize bytes each): the settings in use, the settings a
 // blend started from; slot 7 is the last stand set, its name is a string of 0x40 bytes.
 constexpr int kCgVisionSetCurrent = 0x7dbf8;
