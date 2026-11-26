@@ -61,8 +61,13 @@ constexpr size_t kCgVisionSetSize = 0x1e0;
 constexpr int kVisionSetSlotLastStand = 7;
 constexpr int kCgVisionSetLastStandName = 0x809f8;
 constexpr int kCgOldPsDamageEvent = 0x80b80; // int, the damage counter of the playerState before the prediction
-constexpr int kClientInfoSize = 0x808;       // bytes per clientinfo entry
-constexpr size_t kCentSize = 0x380;          // bytes per entity in the cgame entity array
+// The gump fade (the rectangle of one colour that hides a view while a gump loads; drawn by 0x004b0fd0).
+constexpr int kCgGumpFadeState = 0x87668;  // int: 0 off, 1 started, 2 held while a gump loads, 3 fading out
+constexpr int kCgGumpFadeColour = 0x8766c; // three floats
+constexpr int kCgGumpFadeAlpha = 0x87678;  // float
+constexpr int kCgGumpFadeStart = 0x8767c;  // int, the cgame time of the start of the current state
+constexpr int kClientInfoSize = 0x808;     // bytes per clientinfo entry
+constexpr size_t kCentSize = 0x380;        // bytes per entity in the cgame entity array
 
 // --- Frontend and backend view data (pointers engine::kFrontendData / engine::kBackendData) ---
 constexpr int kViewIndex = 0x474208; // int, the view being built or drawn

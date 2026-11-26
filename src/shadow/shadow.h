@@ -150,7 +150,7 @@ void P2CgSetWeaponSelect(int weapon); // cg+0x69674 of player 2's block (whichev
 extern const Detour kCgSwapHooks[1];  // a shadow player's viewmodel hands (p2_vm_own_hands)
 
 // gump.cpp (p2_gump=1: TranZit area fastfile of player 2 in gump slot 1)
-extern const Detour kGumpHooks[2];
+extern const Detour kGumpHooks[3];
 
 // weapnext is not a usercmd button bit: pad and script set this pseudo bit in buttons2,
 // P2FillUsercmdFromPad turns its rising edge into g_p2WeapNextPending and masks it out.

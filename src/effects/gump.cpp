@@ -83,9 +83,49 @@ static void __cdecl HookScrFlushGump() {
     engine::FlushGumpSlot(slot);
 }
 static const uint8_t kProScrGump[] = {0x56, 0x6a, 0x00, 0x6a, 0x01}; // push esi; push 0; push 1 (both builtins)
+
+// The gump fade. While a gump loads, the cgame hides the view behind a rectangle of one colour:
+// the state lies in the cgame block (cg+0x87668: 0 off, 1 started, 2 held while the engine's
+// "a gump is loading" word 0x0279fa1c is set, 3 fading out; colour at +0x8766c, alpha at
+// +0x87678, start time at +0x8767c) and 0x004b0fd0 draws it first in the 2D of the view (dark
+// grey, 0.1 0.1 0.1; with no gump loading it is opaque for 750 ms after a start and gone 250 ms
+// later). It is started by the engine when a spectating player switches the watched player
+// (0x004b0f60) and by the client script builtin sethidegumpalpha(localClientNum [, colour])
+// (0x0050c130).
+//
+// The engine runs the client script threads in every view pass (CG_AddPacketEntities
+// 0x004c0ff0 ends in the script's time step 0x007f3c40), and every pass is local client 0: the
+// script meets another player in each pass. On TranZit (zclassic) it calls the builtin in every
+// pass whose player is dead and watching while the player of the pass before it is not, and
+// the other way round, so in every frame; the call lands in the cgame block of that pass. Those
+// views would stay dark grey with only the HUD on top, the view of a living player among them
+// (players 3 and 4 with player 3 dead, players 1 and 3 with players 3 and 4 dead).
+//
+// While more than one view is drawn the builtin starts no fade. What the fade is there to hide
+// does not occur then: the watched player has a view of its own, whose pass has asked for the
+// gump of its area already. The hook sits behind the builtin's argument check (the first five
+// bytes of the builtin end inside a call); the stack is as on entry there, so returning from the
+// hook returns to the script.
+static void* oScrHideGump;
+static void __cdecl HookScrHideGump() {
+    if (g_p2.started && g_viewCount > 1) {
+        static bool logged;
+        if (!logged) {
+            logged = true;
+            Log("[gump] sethidegumpalpha of the client script starts no fade while %d views are drawn",
+                (int)g_viewCount);
+        }
+        return;
+    }
+    ((void(__cdecl*)())oScrHideGump)();
+}
+static const uint8_t kProScrHideGump[] = {0xf3, 0x0f, 0x10, 0x05, 0x68, 0xa2, 0xb0, 0x00}; // movss xmm0, [0x00b0a268]
+
 const Detour kGumpHooks[] = {
     {"CScr_LoadGump (gump slots as a cache)", 0x0050bfc0, kProScrGump, sizeof(kProScrGump), (void*)HookScrLoadGump,
      &oScrLoadGump},
     {"CScr_FlushGump (gump slots as a cache)", 0x0050c0f0, kProScrGump, sizeof(kProScrGump), (void*)HookScrFlushGump,
      &oScrFlushGump},
+    {"CScr_SetHideGumpAlpha (no gump fade from the script while several views are drawn)", 0x0050c160, kProScrHideGump,
+     sizeof(kProScrHideGump), (void*)HookScrHideGump, &oScrHideGump},
 };
