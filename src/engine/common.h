@@ -42,6 +42,8 @@ constexpr uintptr_t kSvRunningDvar = 0x02482a48; // dvar*, tested with kDvar_Get
 constexpr uintptr_t kMaxClientsDvar =
     0x02504468;                              // dvar*, read with kDvarIntValue: the number of client slots (maxClients)
 constexpr uintptr_t kQportBase = 0x0270cb38; // Netchan qport = base + lc
+constexpr uintptr_t kGumpLoading =
+    0x0279fa1c; // int, nonzero while a gump is being loaded (cleared when the load has finished, 0x006dd810)
 constexpr uintptr_t kFfotdBuffer = 0x02edd9c8;       // fix-of-the-day download buffer (0x20000 bytes)
 constexpr uintptr_t kFfotdSize = 0x02f1da10;         // size of the downloaded fix-of-the-day zone
 constexpr uintptr_t kFfotdFetched = 0x02f1da24;      // byte

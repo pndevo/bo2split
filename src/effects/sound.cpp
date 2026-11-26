@@ -85,6 +85,21 @@ static int ShadowPlayerSlot(int ent) {
 static void __cdecl FireSoundEnter(const uint32_t* ev) {
     int slot = ev && !*((const uint8_t*)ev + 0x2d) ? ShadowPlayerSlot((int)(ev[1] & 0xfff)) : -1;
     if (slot >= 0) InterlockedIncrement(&g_shadowShots[slot]);
+    // p_view_flash_log=N (diagnostic): N lines, one per fire sound event.
+    {
+        static int left = -1, armed = -1;
+        int v = ReadIniInt(L"p_view_flash_log", 0);
+        if (v != armed) {
+            armed = v;
+            left = v;
+        }
+        if (left > 0 && ev) {
+            --left;
+            Log("[flash] fire sound: entity %u, weapon %u, own view %u, shadow slot %d, view pass %d, in the view loop "
+                "%d",
+                ev[1] & 0xfff, ev[2], *((const uint8_t*)ev + 0x2d), slot, (int)g_viewPass, g_inRenderViews ? 1 : 0);
+        }
+    }
     g_fireOwn = slot >= 0 && ReadIniInt(L"p_snd_own_fire", 1);
     static int logLeft = 4;
     if (g_fireOwn && logLeft > 0) {

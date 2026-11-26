@@ -19,10 +19,14 @@ constexpr uintptr_t kCG_AdvanceDObjAnimByFrametime =
 constexpr uintptr_t kCG_CalcEntityLerpPositions = 0x004bfc40; // void (int lc, cent)
 constexpr uintptr_t kCG_AddEntityByType = 0x004c0750;         // void (lc, cent, cg): the add by type
 constexpr uintptr_t kCG_SendHudInfoEvent = 0x0050fe30;        // void (int lc, int type)
-constexpr uintptr_t kCG_SelectWeapon = 0x005369a0;            // void (int lc, playerState*, int weapon)
-constexpr uintptr_t kCG_ActionSlotDown = 0x0053a3e0;          // void (int lc, int slot 0..3)
-constexpr uintptr_t kCG_WeapNext_f = 0x0053be10;              // CG_WeapNext_f
-constexpr uintptr_t kCG_WeapPrev_f = 0x0053be50;              // CG_WeapPrev_f
+constexpr uintptr_t kCG_UpdateShellshock =
+    0x00512d40; // void (int lc, entry, int start, int duration): sound, look scale, view kick and vision set of a
+                // shellshock, once per view pass
+constexpr uintptr_t kShellshockNoise = 0x00b23560;   // pairs of floats (pitch, yaw), 128 plus 3: the view kick's noise
+constexpr uintptr_t kCG_SelectWeapon = 0x005369a0;   // void (int lc, playerState*, int weapon)
+constexpr uintptr_t kCG_ActionSlotDown = 0x0053a3e0; // void (int lc, int slot 0..3)
+constexpr uintptr_t kCG_WeapNext_f = 0x0053be10;     // CG_WeapNext_f
+constexpr uintptr_t kCG_WeapPrev_f = 0x0053be50;     // CG_WeapPrev_f
 constexpr uintptr_t kCL_SendCmd =
     0x00541180; // void (int lc): the command packet send step, reads the ready-to-send check first
 constexpr uintptr_t kCL_CheckForResend = 0x00550c90; // void (int lc): getchallenge / connect
@@ -58,6 +62,18 @@ constexpr uintptr_t kCG_PlayWeaponFlash =
     0x005304a0; // void (lc, dobj handle, weapon, bool view weapon, tag name): plays the weapon's flash effect on that tag
 constexpr uintptr_t kCG_EjectWeaponBrass =
     0x00533b20; // void (lc, int* entity number, weapon, tag name, bool left hand, bool): plays the weapon's shell eject effect
+constexpr uintptr_t kBG_GetViewFlashEffect =
+    0x008e9100; // uint8_t* (int weapon): the effect definition of the weapon's first-person muzzle flash, or null
+constexpr uintptr_t kCG_PlayEffectOnTag =
+    0x004c2250; // int (lc, effect def, dobj handle, tag name, weapon def + 0x7c, axis): plays the effect on that tag of the DObj, returns the effect's handle (0 = none)
+constexpr uintptr_t kFX_EffectFromHandle = 0x005c7850; // uint8_t* (fx system, handle): the effect of a handle
+// The bolt word of an effect: what it is bound to. Bits 8 and 9 the kind (0 = nothing, 1 = a
+// bone of a DObj: every update of the effect, 0x005c9290, reads the bone's place again), bits
+// 10 to 20 the DObj handle, bits 22 to 30 the bone. kFxBoltNone is what the engine writes when
+// the bone is gone: the effect keeps the place it has.
+constexpr int kFxEffectBolt = 0xb4;
+constexpr unsigned kFxBoltKindMask = 0x00000300;
+constexpr unsigned kFxBoltNone = 0x7fdffc00;
 constexpr uintptr_t kTagFlashName = 0x02405500; // uint16: the script string "tag_flash"
 constexpr int kViewWeaponDObjHandle = 0x700;    // plus the local client: the first-person weapon's DObj
 constexpr uintptr_t kCG_PlayRumbleOnClient =
@@ -202,6 +218,17 @@ __forceinline void BG_WeaponFireRecoil(uint8_t* ps, uint8_t* weaponKick, uint8_t
                                        int flag, uint8_t* arg5, const void* arg6) {
     ((void(__cdecl*)(uint8_t*, uint8_t*, uint8_t*, uint8_t*, int, uint8_t*, const void*))kBG_WeaponFireRecoil)(
         ps, weaponKick, viewKickVelocity, arg3, flag, arg5, arg6);
+}
+__forceinline uint8_t* BG_GetViewFlashEffect(int weapon) {
+    return ((uint8_t*(__cdecl*)(int))kBG_GetViewFlashEffect)(weapon);
+}
+__forceinline int CG_PlayEffectOnTag(int lc, uint8_t* effectDef, int dobjHandle, unsigned tagName,
+                                     uint8_t* weaponDefPart, float* axis) {
+    return ((int(__cdecl*)(int, uint8_t*, int, unsigned, uint8_t*, float*))kCG_PlayEffectOnTag)(
+        lc, effectDef, dobjHandle, tagName, weaponDefPart, axis);
+}
+__forceinline uint8_t* FX_EffectFromHandle(uint8_t* fxSystem, int handle) {
+    return ((uint8_t*(__cdecl*)(uint8_t*, int))kFX_EffectFromHandle)(fxSystem, handle);
 }
 __forceinline uint8_t* BG_GetWeaponDef(int weapon) {
     return ((uint8_t*(__cdecl*)(int))kBG_GetWeaponDef)(weapon);

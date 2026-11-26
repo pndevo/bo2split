@@ -410,6 +410,86 @@ static void SnapFollowRestore() {
         s.at = nullptr;
     }
 }
+// The shellshock of a player (a stun: blurred double picture, view kick, slow look, a sound
+// loop) is three fields of its playerState, and CG_DrawActiveFrame (0x005251d0, at 0x005254e1)
+// reads them in every pass from the next snapshot, which a shadow pass shares with player 1:
+// a shellshock of player 1 showed in every view, one of a shadow player in none. For the time
+// of a shadow pass both snapshots carry the fields of that pass's player.
+static struct {
+    uint8_t* at;
+    uint8_t saved[engine::kPsShellshockSize];
+} g_snapShock[2];
+static void SnapShockOwn(uint8_t* cg) {
+    if (g_snapShock[0].at || g_snapShock[1].at) return;
+    const uint8_t* own = ShadowFramePs(cg);
+    if (!own) return;
+    uint8_t* snaps[2] = {*(uint8_t**)(cg + engine::kCgNextSnap), *(uint8_t**)(cg + engine::kCgSnap)};
+    if (snaps[1] == snaps[0]) snaps[1] = nullptr;
+    for (int i = 0; i < 2; ++i) {
+        if (!snaps[i]) continue;
+        g_snapShock[i].at = snaps[i] + 0x10 + engine::kPsShellshock;
+        memcpy(g_snapShock[i].saved, g_snapShock[i].at, engine::kPsShellshockSize);
+        memcpy(g_snapShock[i].at, own + engine::kPsShellshock, engine::kPsShellshockSize);
+    }
+}
+static void SnapShockRestore() {
+    for (auto& s : g_snapShock) {
+        if (!s.at) continue;
+        memcpy(s.at, s.saved, engine::kPsShellshockSize);
+        s.at = nullptr;
+    }
+}
+// CG_UpdateShellshock runs once per pass with the shellshock of the pass's player. Its sound
+// commands and the turn limits it writes go to the one local client, which is player 1: run
+// for a shadow player they would end player 1's sound loop in every frame, or start one for a
+// shellshock player 1 does not have. In a shadow pass only the part that belongs to the view
+// runs here, on the pass's own block: the look scale and the view kick, as the engine
+// computes them (0x00512a00, 0x00512b10). Left out: the sound (0x005127d0), the turn limits
+// (0x00546140) and the shellshock's vision set (0x00512c90).
+typedef void(__cdecl* CgUpdateShellshock_t)(int, const uint8_t*, int, int);
+static CgUpdateShellshock_t oCgUpdateShellshock;
+static void __cdecl HookCgUpdateShellshock(int lc, const uint8_t* entry, int start, int duration) {
+    uint8_t* cg = *(uint8_t**)engine::kCg;
+    if (!g_inRenderViews || g_viewPass < 1 || !cg || !entry) {
+        oCgUpdateShellshock(lc, entry, start, duration);
+        return;
+    }
+    float* lookScale = (float*)(cg + engine::kCgShellshockLookScale);
+    float* kick = (float*)(cg + engine::kCgShellshockKick);
+    int elapsed = *(const int*)(cg + engine::kCgTime) - start;
+    int left = duration - elapsed;
+    // cg+0x69928 and cg+0x6993c both set: the engine shows no shellshock then (0x004d1b80).
+    bool blocked = *(const int*)(cg + 0x69928) && *(const int*)(cg + 0x6993c);
+    *lookScale = 1.0f;
+    kick[0] = kick[1] = 0.0f;
+    if (!start || elapsed < 0 || blocked) {
+        kick[2] = 0.0f;
+        return;
+    }
+    // Look scale: the entry's value (+0x1c8), faded back to 1 over its last ms (+0x1c4).
+    if (entry[0x1c0] && left >= 1) {
+        int fade = *(const int*)(entry + 0x1c4);
+        float f = left < fade ? (float)left / (float)fade : 1.0f;
+        *lookScale = (*(const float*)(entry + 0x1c8) - 1.0f) * f + 1.0f;
+    }
+    // View kick: a cubic through four neighbours of the noise table, at elapsed time times
+    // the entry's rate (+0x18), scaled by its size (+0x1c) and faded out over its last ms (+0x14).
+    if (left < 1) return;
+    int fade = *(const int*)(entry + 0x14);
+    float f = left < fade ? (float)left / (float)fade : 1.0f;
+    float size = (3.0f - f * 2.0f) * f * f * *(const float*)(entry + 0x1c);
+    float at = (float)elapsed * *(const float*)(entry + 0x18);
+    int whole = (int)floorf(at);
+    float t = at - (float)whole;
+    const float* n = (const float*)engine::kShellshockNoise + ((duration * 0x3d + whole) & 0x7f) * 2;
+    for (int i = 0; i < 2; ++i) {
+        float p0 = n[i], p1 = n[2 + i], p2 = n[4 + i], p3 = n[6 + i];
+        float a = (p3 - p2) + p1 - p0;
+        kick[i] = (((((p0 - p1) - a) + a * t) * t + (p2 - p0)) * t + p1) * size;
+    }
+}
+static const uint8_t kProCgUpdateShellshock[] = {0xa1, 0x5c, 0xf7, 0x05, 0x01, 0x56, 0x57};
+
 static void __cdecl OnDrawPassBegin() {
     if (!g_inRenderViews) return;
     if (g_viewPass == 0) ++g_renderFrames;
@@ -533,6 +613,7 @@ static void __cdecl OnDrawPassBegin() {
                 *(int*)cg = *(const int*)(ShadowViewCl() + engine::kClPlayerState + engine::kPsClientNum);
             }
             SnapFollowHide(cg);
+            SnapShockOwn(cg);
             static int logged;
             if (g_viewPass == 1 && logged < 3) {
                 ++logged;
@@ -573,6 +654,7 @@ static void __cdecl OnDrawPassEnd() {
         uint8_t* cg = *(uint8_t**)engine::kCg;
         ShadowRestoreSnapPs();
         SnapFollowRestore();
+        SnapShockRestore();
         if (cg) memcpy(cg + engine::kCgPredictedPs, g_savedPs, engine::kPlayerStateSize);
         if (cg && g_savedCgClientNum >= 0) {
             *(int*)cg = g_savedCgClientNum;
@@ -757,6 +839,9 @@ const Detour kViewHooks[] = {
      (void*)HookRenderViews, (void**)&oRenderViews},
     {"DrawActiveFrameLocalClient0 (view pass counter)", 0x0055af10, kProDrawActiveFrame, sizeof(kProDrawActiveFrame),
      (void*)HookDrawActiveFrame, &oDrawActiveFrame},
+    {"CG_UpdateShellshock (a shadow pass keeps player 1's sound and turn limits)", engine::kCG_UpdateShellshock,
+     kProCgUpdateShellshock, sizeof(kProCgUpdateShellshock), (void*)HookCgUpdateShellshock,
+     (void**)&oCgUpdateShellshock},
 };
 
 // Render command buffers (0x034b40d0, two of 0x60000 bytes) hold one view's commands;

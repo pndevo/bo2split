@@ -223,23 +223,106 @@ void ShadowFxLog(int pass) {
 typedef void(__cdecl* PlayWeaponFlash_t)(int, int, int, int, unsigned);
 static PlayWeaponFlash_t oPlayWeaponFlash;
 static volatile DWORD g_viewFlashTick[4]; // per pass: tick of the last view flash, 0 = never
-static void __cdecl HookPlayWeaponFlash(int lc, int handle, int weapon, int viewWeapon, unsigned tag) {
+static void NoteViewFlash(int handle, int weapon, int viewWeapon, uintptr_t from) {
     if (viewWeapon) {
         int pass = (g_inRenderViews && g_viewPass >= 0 && g_viewPass <= 3) ? g_viewPass : 0;
         DWORD now = GetTickCount();
         g_viewFlashTick[pass] = now ? now : 1;
     }
+    // p_view_flash_log=N (diagnostic): N lines, one per flash a weapon starts.
+    static int left = -1, armed = -1;
+    int v = ReadIniInt(L"p_view_flash_log", 0);
+    if (v != armed) {
+        armed = v;
+        left = v;
+    }
+    if (left > 0) {
+        --left;
+        Log("[flash] weapon %d, view weapon %d, handle %x, view pass %d, in the view loop %d, called from %08x", weapon,
+            viewWeapon, handle, (int)g_viewPass, g_inRenderViews ? 1 : 0, (unsigned)from);
+    }
+}
+static void PlayViewFlashUnbound(int lc, int handle, int weapon, unsigned tag);
+static void __cdecl HookPlayWeaponFlash(int lc, int handle, int weapon, int viewWeapon, unsigned tag) {
+    NoteViewFlash(handle, weapon, viewWeapon, (uintptr_t)_ReturnAddress());
+    // While more than one view is drawn, player 1's view flash is taken off its binding as a
+    // shadow player's is (see below): bound, it would follow the first-person weapon of
+    // whichever pass the effect update finds behind the handle, and show there in every view.
+    if (viewWeapon && g_viewCount >= 2 && g_p2.started) {
+        PlayViewFlashUnbound(lc, handle, weapon, tag);
+        return;
+    }
     oPlayWeaponFlash(lc, handle, weapon, viewWeapon, tag);
 }
 static const uint8_t kProPlayWeaponFlash[] = {0x8b, 0x44, 0x24, 0x0c, 0x83, 0xec, 0x24};
 
+// The view flash of a shadow player, started in its own pass. It is what 0x005304a0 does for a
+// view weapon: 0x004c2250(lc, effect, DObj handle, tag name, weapon def + 0x7c, axis) plays the
+// weapon's view flash effect (0x008e9100) on the tag of the first-person weapon and returns the
+// effect's handle.
+//
+// An effect that has an element moving with it (element flags & 0x1c0 == 0x80, or a trail) is
+// bound to the bone (0x005c52e0): its bolt word (effect +0xb4) holds the kind of the binding
+// in bits 8 and 9 (1 = a DObj), the DObj handle in bits 10 to 20 and the bone in bits 22 to
+// 30, and every update of the effect (0x005c9290) reads the bone's place again. That update
+// finds player 1's first-person weapon behind the handle. Most view flashes only run child
+// effects, which are born at the muzzle of the player that fired and stay there. The one of the
+// upgraded FN FAL (fx_zmb_rifle1_flash_base) draws its fourteen elements itself and keeps them
+// for some hundred milliseconds: a shadow player's burst showed as a cloud at player 1's muzzle
+// and not at its own.
+//
+// So the effect of a shadow player is taken off its binding right after
+// its start, with the value the engine writes when a bone is gone (kind 0, no handle, no
+// bone): it keeps the place and the axis it was born with, the muzzle of the player that fired.
+// Without a bone but still bound, the engine would take the weapon origin of player 1's cgame
+// block (0x004d56d0).
+//
+// The effect is born without the binding, not taken off it afterwards: its runner elements
+// queue the spawn of their child effects (0x005c6070 works the queue off, on another thread)
+// with the DObj handle and the bone of the parent, and a child queued before the parent lost
+// its binding was bound to the first-person weapon again. The sparks of the Saiga-12 are such
+// children: they flew in front of the weapon of other views. So the effect spawn (0x005c4890)
+// gets "no DObj, no bone" (0x7ff, 0x1ff, which yields kFxBoltNone) for the effect this thread
+// starts here, and for a child that asks for the first-person weapon while its owner has no
+// binding.
+typedef int(__cdecl* FxSpawnEffect_t)(uint8_t*, uint8_t*, int, float*, float*, int, unsigned, int, int, unsigned, void*,
+                                      int, int, int, int, int);
+static FxSpawnEffect_t oFxSpawnEffect;
+static volatile DWORD g_flashUnboundThread; // the thread that starts a view flash without its binding
+static int __cdecl HookFxSpawnEffect(uint8_t* sys, uint8_t* def, int time, float* origin, float* axis, int dobjHandle,
+                                     unsigned bone, int a8, int owner, unsigned a10, void* a11, int a12, int a13,
+                                     int a14, int a15, int a16) {
+    if (dobjHandle == engine::kViewWeaponDObjHandle && a10 == 0x3ff) {
+        bool unbound = g_flashUnboundThread && g_flashUnboundThread == GetCurrentThreadId();
+        if (!unbound && owner && g_viewCount >= 2 && g_p2.started) {
+            const uint8_t* parent = engine::FX_EffectFromHandle(sys, owner);
+            unbound =
+                parent && (*(const unsigned*)(parent + engine::kFxEffectBolt) & 0x7fffff00) == engine::kFxBoltNone;
+        }
+        if (unbound) {
+            dobjHandle = 0x7ff;
+            bone = 0x1ff;
+        }
+    }
+    return oFxSpawnEffect(sys, def, time, origin, axis, dobjHandle, bone, a8, owner, a10, a11, a12, a13, a14, a15, a16);
+}
+static const uint8_t kProFxSpawnEffect[] = {0x83, 0xec, 0x44, 0x53, 0x8b, 0x5c, 0x24, 0x4c};
+static void PlayViewFlashUnbound(int lc, int dobjHandle, int weapon, unsigned tag) {
+    uint8_t* def = engine::BG_GetWeaponDef(weapon);
+    uint8_t* effect = engine::BG_GetViewFlashEffect(weapon);
+    if (!def || !effect) return;
+    float axis[9] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    g_flashUnboundThread = GetCurrentThreadId();
+    engine::CG_PlayEffectOnTag(lc, effect, dobjHandle, tag, def + 0x7c, axis);
+    g_flashUnboundThread = 0;
+}
 void ShadowViewFlash(const uint8_t* cg) {
     if (!cg || !oPlayWeaponFlash || !ReadIniInt(L"p_view_flash", 1)) return;
     int weapon = engine::BG_GetWeapon(cg + engine::kCgPredictedPs);
     if (!weapon) return;
-    HookPlayWeaponFlash(0, engine::kViewWeaponDObjHandle, weapon, 1, *(const uint16_t*)engine::kTagFlashName);
+    NoteViewFlash(engine::kViewWeaponDObjHandle, weapon, 1, 0);
+    PlayViewFlashUnbound(0, engine::kViewWeaponDObjHandle, weapon, *(const uint16_t*)engine::kTagFlashName);
 }
-
 bool WeaponFxInPass(int pass) {
     if (pass < 0 || pass > 3) return true;
     DWORD now = GetTickCount();
@@ -283,6 +366,8 @@ const Detour kFxHooks[] = {
      kProEjectBrass, sizeof(kProEjectBrass), (void*)HookEjectBrass, (void**)&oEjectBrass},
     {"view flash of a weapon (remembers the pass that started it)", engine::kCG_PlayWeaponFlash, kProPlayWeaponFlash,
      sizeof(kProPlayWeaponFlash), (void*)HookPlayWeaponFlash, (void**)&oPlayWeaponFlash},
+    {"FX effect spawn (a view flash and its child effects without the binding to the first-person weapon)", 0x005c4890,
+     kProFxSpawnEffect, sizeof(kProFxSpawnEffect), (void*)HookFxSpawnEffect, (void**)&oFxSpawnEffect},
     {"FX_CullSphere (culled only when both players' cameras cull)", 0x005cd6d0, kProFxCullSphere,
      sizeof(kProFxCullSphere), (void*)HookFxCullSphere, (void**)&oFxCullSphere},
     {"FX spawn culling of an element (same, with the spawn range)", 0x005c3bf0, kProFxCullElemForSpawn,

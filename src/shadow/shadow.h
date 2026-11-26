@@ -70,6 +70,7 @@ bool PadTurnAccel();        // the pads' turn rate has the game's run-up (look_a
 bool PadTurnOncePerFrame(); // player 1's pad turns once per frame, not once per view pass (pad_turn_once)
 
 extern const Detour kShadowClientHooks[6];
+extern const Detour kMoverHooks[1]; // mover.cpp: a shadow player carried by the bus
 
 // input.cpp: GPad_IsActive hook
 extern volatile int g_padReportedInactive;
@@ -114,7 +115,7 @@ extern volatile bool g_viewWeapNext[3];
 extern volatile bool g_p2WeapPrevPending, g_viewWeapPrev[3];
 // One hook table per file of the view passes: view.cpp, playerstate.cpp, entities.cpp,
 // predict.cpp, scene.cpp.
-extern const Detour kViewHooks[12];
+extern const Detour kViewHooks[13];
 extern const Detour kViewPsHooks[2];
 extern const Detour kViewEntityHooks[8];
 extern const Detour kViewPredictHooks[5];
@@ -150,7 +151,7 @@ void P2CgSetWeaponSelect(int weapon); // cg+0x69674 of player 2's block (whichev
 extern const Detour kCgSwapHooks[1];  // a shadow player's viewmodel hands (p2_vm_own_hands)
 
 // gump.cpp (p2_gump=1: TranZit area fastfile of player 2 in gump slot 1)
-extern const Detour kGumpHooks[2];
+extern const Detour kGumpHooks[3];
 
 // weapnext is not a usercmd button bit: pad and script set this pseudo bit in buttons2,
 // P2FillUsercmdFromPad turns its rising edge into g_p2WeapNextPending and masks it out.
@@ -246,7 +247,7 @@ void ShadowFxCaptureCamera(const uint8_t* sys);
 void ShadowFxLog(int pass);
 void ShadowViewFlash(const uint8_t* cg);
 bool WeaponFxInPass(int pass); // the effects of the first-person weapon are drawn in this pass (render thread)
-extern const Detour kFxHooks[6];
+extern const Detour kFxHooks[7];
 
 // render_backend.cpp
 typedef void(__cdecl* IssueRenderCommands_t)(unsigned);
