@@ -246,7 +246,7 @@ void ShadowFxCaptureCamera(const uint8_t* sys);
 void ShadowFxLog(int pass);
 void ShadowViewFlash(const uint8_t* cg);
 bool WeaponFxInPass(int pass); // the effects of the first-person weapon are drawn in this pass (render thread)
-extern const Detour kFxHooks[6];
+extern const Detour kFxHooks[7];
 
 // render_backend.cpp
 typedef void(__cdecl* IssueRenderCommands_t)(unsigned);

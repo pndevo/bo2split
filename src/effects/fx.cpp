@@ -276,21 +276,45 @@ static const uint8_t kProPlayWeaponFlash[] = {0x8b, 0x44, 0x24, 0x0c, 0x83, 0xec
 // bone): it keeps the place and the axis it was born with, the muzzle of the player that fired.
 // Without a bone but still bound, the engine would take the weapon origin of player 1's cgame
 // block (0x004d56d0).
+//
+// The effect is born without the binding, not taken off it afterwards: its runner elements
+// queue the spawn of their child effects (0x005c6070 works the queue off, on another thread)
+// with the DObj handle and the bone of the parent, and a child queued before the parent lost
+// its binding was bound to the first-person weapon again. The sparks of the Saiga-12 are such
+// children: they flew in front of the weapon of other views. So the effect spawn (0x005c4890)
+// gets "no DObj, no bone" (0x7ff, 0x1ff, which yields kFxBoltNone) for the effect this thread
+// starts here, and for a child that asks for the first-person weapon while its owner has no
+// binding.
+typedef int(__cdecl* FxSpawnEffect_t)(uint8_t*, uint8_t*, int, float*, float*, int, unsigned, int, int, unsigned, void*,
+                                      int, int, int, int, int);
+static FxSpawnEffect_t oFxSpawnEffect;
+static volatile DWORD g_flashUnboundThread; // the thread that starts a view flash without its binding
+static int __cdecl HookFxSpawnEffect(uint8_t* sys, uint8_t* def, int time, float* origin, float* axis, int dobjHandle,
+                                     unsigned bone, int a8, int owner, unsigned a10, void* a11, int a12, int a13,
+                                     int a14, int a15, int a16) {
+    if (dobjHandle == engine::kViewWeaponDObjHandle && a10 == 0x3ff) {
+        bool unbound = g_flashUnboundThread && g_flashUnboundThread == GetCurrentThreadId();
+        if (!unbound && owner && g_viewCount >= 2 && g_p2.started) {
+            const uint8_t* parent = engine::FX_EffectFromHandle(sys, owner);
+            unbound =
+                parent && (*(const unsigned*)(parent + engine::kFxEffectBolt) & 0x7fffff00) == engine::kFxBoltNone;
+        }
+        if (unbound) {
+            dobjHandle = 0x7ff;
+            bone = 0x1ff;
+        }
+    }
+    return oFxSpawnEffect(sys, def, time, origin, axis, dobjHandle, bone, a8, owner, a10, a11, a12, a13, a14, a15, a16);
+}
+static const uint8_t kProFxSpawnEffect[] = {0x83, 0xec, 0x44, 0x53, 0x8b, 0x5c, 0x24, 0x4c};
 static void PlayViewFlashUnbound(int lc, int dobjHandle, int weapon, unsigned tag) {
     uint8_t* def = engine::BG_GetWeaponDef(weapon);
     uint8_t* effect = engine::BG_GetViewFlashEffect(weapon);
     if (!def || !effect) return;
     float axis[9] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-    int handle = engine::CG_PlayEffectOnTag(lc, effect, dobjHandle, tag, def + 0x7c, axis);
-    uint8_t* sys = *(uint8_t**)engine::kFxSystem;
-    uint8_t* fx = handle && sys ? engine::FX_EffectFromHandle(sys, handle) : nullptr;
-    if (!fx) return;
-    volatile LONG* bolt = (volatile LONG*)(fx + engine::kFxEffectBolt);
-    for (;;) {
-        LONG was = *bolt;
-        LONG now = (LONG)(((unsigned)was & ~engine::kFxBoltKindMask) | engine::kFxBoltNone);
-        if (InterlockedCompareExchange(bolt, now, was) == was) break;
-    }
+    g_flashUnboundThread = GetCurrentThreadId();
+    engine::CG_PlayEffectOnTag(lc, effect, dobjHandle, tag, def + 0x7c, axis);
+    g_flashUnboundThread = 0;
 }
 void ShadowViewFlash(const uint8_t* cg) {
     if (!cg || !oPlayWeaponFlash || !ReadIniInt(L"p_view_flash", 1)) return;
@@ -342,6 +366,8 @@ const Detour kFxHooks[] = {
      kProEjectBrass, sizeof(kProEjectBrass), (void*)HookEjectBrass, (void**)&oEjectBrass},
     {"view flash of a weapon (remembers the pass that started it)", engine::kCG_PlayWeaponFlash, kProPlayWeaponFlash,
      sizeof(kProPlayWeaponFlash), (void*)HookPlayWeaponFlash, (void**)&oPlayWeaponFlash},
+    {"FX effect spawn (a view flash and its child effects without the binding to the first-person weapon)", 0x005c4890,
+     kProFxSpawnEffect, sizeof(kProFxSpawnEffect), (void*)HookFxSpawnEffect, (void**)&oFxSpawnEffect},
     {"FX_CullSphere (culled only when both players' cameras cull)", 0x005cd6d0, kProFxCullSphere,
      sizeof(kProFxCullSphere), (void*)HookFxCullSphere, (void**)&oFxCullSphere},
     {"FX spawn culling of an element (same, with the spawn range)", 0x005c3bf0, kProFxCullElemForSpawn,
