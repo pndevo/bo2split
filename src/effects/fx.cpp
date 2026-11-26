@@ -223,23 +223,72 @@ void ShadowFxLog(int pass) {
 typedef void(__cdecl* PlayWeaponFlash_t)(int, int, int, int, unsigned);
 static PlayWeaponFlash_t oPlayWeaponFlash;
 static volatile DWORD g_viewFlashTick[4]; // per pass: tick of the last view flash, 0 = never
-static void __cdecl HookPlayWeaponFlash(int lc, int handle, int weapon, int viewWeapon, unsigned tag) {
+static void NoteViewFlash(int handle, int weapon, int viewWeapon, uintptr_t from) {
     if (viewWeapon) {
         int pass = (g_inRenderViews && g_viewPass >= 0 && g_viewPass <= 3) ? g_viewPass : 0;
         DWORD now = GetTickCount();
         g_viewFlashTick[pass] = now ? now : 1;
     }
+    // p_view_flash_log=N (diagnostic): N lines, one per flash a weapon starts.
+    static int left = -1, armed = -1;
+    int v = ReadIniInt(L"p_view_flash_log", 0);
+    if (v != armed) {
+        armed = v;
+        left = v;
+    }
+    if (left > 0) {
+        --left;
+        Log("[flash] weapon %d, view weapon %d, handle %x, view pass %d, in the view loop %d, called from %08x", weapon,
+            viewWeapon, handle, (int)g_viewPass, g_inRenderViews ? 1 : 0, (unsigned)from);
+    }
+}
+static void __cdecl HookPlayWeaponFlash(int lc, int handle, int weapon, int viewWeapon, unsigned tag) {
+    NoteViewFlash(handle, weapon, viewWeapon, (uintptr_t)_ReturnAddress());
     oPlayWeaponFlash(lc, handle, weapon, viewWeapon, tag);
 }
 static const uint8_t kProPlayWeaponFlash[] = {0x8b, 0x44, 0x24, 0x0c, 0x83, 0xec, 0x24};
 
+// The view flash of a shadow player, started in its own pass. It is what 0x005304a0 does for a
+// view weapon: 0x004c2250(lc, effect, DObj handle, tag name, weapon def + 0x7c, axis) plays the
+// weapon's view flash effect (0x008e9100) on the tag of the first-person weapon and returns the
+// effect's handle.
+//
+// An effect that has an element moving with it (element flags & 0x1c0 == 0x80, or a trail) is
+// bound to the bone (0x005c52e0): its bolt word (effect +0xb4) holds the kind of the binding
+// in bits 8 and 9 (1 = a DObj), the DObj handle in bits 10 to 20 and the bone in bits 22 to
+// 30, and every update of the effect (0x005c9290) reads the bone's place again. That update
+// finds player 1's first-person weapon behind the handle. Most view flashes only run child
+// effects, which are born at the muzzle of the player that fired and stay there. The one of the
+// upgraded FN FAL (fx_zmb_rifle1_flash_base) draws its fourteen elements itself and keeps them
+// for some hundred milliseconds: a shadow player's burst showed as a cloud at player 1's muzzle
+// and not at its own.
+//
+// So the effect of a shadow player is taken off its binding right after
+// its start, with the value the engine writes when a bone is gone (kind 0, no handle, no
+// bone): it keeps the place and the axis it was born with, the muzzle of the player that fired.
+// Without a bone but still bound, the engine would take the weapon origin of player 1's cgame
+// block (0x004d56d0).
 void ShadowViewFlash(const uint8_t* cg) {
     if (!cg || !oPlayWeaponFlash || !ReadIniInt(L"p_view_flash", 1)) return;
     int weapon = engine::BG_GetWeapon(cg + engine::kCgPredictedPs);
     if (!weapon) return;
-    HookPlayWeaponFlash(0, engine::kViewWeaponDObjHandle, weapon, 1, *(const uint16_t*)engine::kTagFlashName);
+    uint8_t* def = engine::BG_GetWeaponDef(weapon);
+    uint8_t* effect = engine::BG_GetViewFlashEffect(weapon);
+    if (!def || !effect) return;
+    NoteViewFlash(engine::kViewWeaponDObjHandle, weapon, 1, 0);
+    float axis[9] = {1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f};
+    int handle = engine::CG_PlayEffectOnTag(0, effect, engine::kViewWeaponDObjHandle,
+                                            *(const uint16_t*)engine::kTagFlashName, def + 0x7c, axis);
+    uint8_t* sys = *(uint8_t**)engine::kFxSystem;
+    uint8_t* fx = handle && sys ? engine::FX_EffectFromHandle(sys, handle) : nullptr;
+    if (!fx) return;
+    volatile LONG* bolt = (volatile LONG*)(fx + engine::kFxEffectBolt);
+    for (;;) {
+        LONG was = *bolt;
+        LONG now = (LONG)(((unsigned)was & ~engine::kFxBoltKindMask) | engine::kFxBoltNone);
+        if (InterlockedCompareExchange(bolt, now, was) == was) break;
+    }
 }
-
 bool WeaponFxInPass(int pass) {
     if (pass < 0 || pass > 3) return true;
     DWORD now = GetTickCount();

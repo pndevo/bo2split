@@ -6,6 +6,8 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+- Fixed: the muzzle flash of some weapons of a player 2, 3 or 4 showed at player 1's weapon and not at its own. Seen with the upgraded FN FAL: a burst of player 2 put a cloud in front of player 1's gun.
+
 ## v0.3.1
 
 - Fixed: a player 2, 3 or 4 that was down had a still camera while the hand with the weapon moved. The camera now sways as player 1's does.
