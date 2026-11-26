@@ -70,6 +70,7 @@ bool PadTurnAccel();        // the pads' turn rate has the game's run-up (look_a
 bool PadTurnOncePerFrame(); // player 1's pad turns once per frame, not once per view pass (pad_turn_once)
 
 extern const Detour kShadowClientHooks[6];
+extern const Detour kMoverHooks[1]; // mover.cpp: a shadow player carried by the bus
 
 // input.cpp: GPad_IsActive hook
 extern volatile int g_padReportedInactive;

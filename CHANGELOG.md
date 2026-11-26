@@ -6,6 +6,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 
 ## Unreleased
 
+- Fixed: on TranZit, players 2, 3 and 4 slid slowly towards the back of the driving bus until they stood at its back wall. They now stay where they stand, as player 1 does.
 - Fixed: the muzzle flash of some weapons of a player 2, 3 or 4 showed at player 1's weapon and not at its own. Seen with the upgraded FN FAL: a burst of player 2 put a cloud in front of player 1's gun.
 - Fixed: on TranZit, two of the views turned grey with only the HUD left as soon as a player 2, 3 or 4 was dead and watched another player, the view of a living player among them. Every view keeps its picture now.
 - Fixed: the muzzle flash of some weapons of player 1 showed at the weapon of another player, in every other view, and for some not in player 1's own view. Seen with the Python and the Saiga-12.

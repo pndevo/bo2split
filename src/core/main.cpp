@@ -198,6 +198,8 @@ static void InitOnGameThread() {
         g_p2.enabled = true;
         for (const Detour& d : kShadowClientHooks)
             InstallDetour(d);
+        for (const Detour& d : kMoverHooks)
+            InstallDetour(d);
     }
     DevInstallHooks(g_build->timestamp == 0x6a8332d9);
     if (g_build->timestamp == 0x6a8332d9) UpdateCheckStart();
