@@ -7,6 +7,7 @@ To release: rename the section "Unreleased" to the new version (`## v1.2.3`), ad
 ## Unreleased
 
 - Fixed: the muzzle flash of some weapons of a player 2, 3 or 4 showed at player 1's weapon and not at its own. Seen with the upgraded FN FAL: a burst of player 2 put a cloud in front of player 1's gun.
+- Fixed: the muzzle flash of some weapons of player 1 showed at the weapon of another player, in every other view, and for some not in player 1's own view. Seen with the Python and the Saiga-12.
 
 ## v0.3.1
 
